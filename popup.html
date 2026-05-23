@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Synapse AI Link Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      --primary: #00ffcc;
+      --secondary: #0099ff;
+      --bg: #0d0d15;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --font: 'Outfit', sans-serif;
+      --error: #f43f5e;
+      --success: #10b981;
+    }
+    
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      box-sizing: border-box;
+      overflow-x: hidden;
+      position: relative;
+      min-height: 480px;
+    }
+    
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 2px; }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(90deg, #fff, var(--primary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-connected { background: rgba(0, 255, 204, 0.12); color: var(--primary); border: 1px solid rgba(0, 255, 204, 0.25); }
+    .status-disconnected { background: rgba(244, 63, 94, 0.12); color: var(--error); border: 1px solid rgba(244, 63, 94, 0.25); }
+    
+    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background-color: currentColor; }
+    .status-connected .pulse-dot { animation: pulse 1.5s infinite; }
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.5; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.5; }
+    }
+
+    .header-right { display: flex; align-items: center; gap: 8px; }
+
+    /* ── AVATAR & DROPDOWN ── */
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #0c0c14;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: transform 0.2s;
+    }
+    .user-avatar:hover { transform: scale(1.05); }
+    .user-avatar.large { width: 64px; height: 64px; font-size: 24px; margin: 0 auto 16px; cursor: default; pointer-events: none; }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 45px;
+      right: 16px;
+      background: rgba(20, 20, 30, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 180px;
+      padding: 8px 0;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .dropdown-menu.show { display: flex; opacity: 1; transform: translateY(0); }
+    .dropdown-item {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
+      text-align: left;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dropdown-item:hover { background: rgba(255,255,255,0.05); color: var(--primary); }
+
+    /* ── SCREENS ── */
+    .screen { display: none; flex-direction: column; animation: fadeIn 0.3s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+    .screen-header { display: flex; align-items: center; margin-bottom: 16px; gap: 12px; }
+    .back-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 11px; padding: 4px 8px; cursor: pointer; transition: all 0.2s; }
+    .back-btn:hover { background: rgba(255,255,255,0.1); color: var(--primary); }
+    .screen-title { font-size: 14px; font-weight: 600; margin: 0; }
+
+    /* ── BUTTONS & INPUTS ── */
+    .btn {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #0c0c14;
+      border: none;
+      border-radius: 10px;
+      padding: 11px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 255, 204, 0.15);
+      font-family: var(--font);
+    }
+    .btn:hover { box-shadow: 0 6px 16px rgba(0, 255, 204, 0.25); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-secondary { background: rgba(255, 255, 255, 0.05) !important; border: 1px solid var(--border) !important; color: var(--text) !important; box-shadow: none !important; }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.08) !important; }
+
+    .input-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+    .input-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .input-field {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .input-field:focus { border-color: var(--primary); box-shadow: 0 0 8px rgba(0, 255, 204, 0.15); }
+    .input-field:disabled, .input-field[readonly] { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── AUTH CARD ── */
+    .auth-card { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 10px; }
+    .auth-tabs { display: flex; border-bottom: 1px solid var(--border); gap: 16px; margin-bottom: 16px; }
+    .auth-tab {
+      background: none; border: none; color: var(--text-muted); font-family: var(--font); font-size: 13px; font-weight: 600; padding: 8px 0; cursor: pointer; position: relative; transition: color 0.2s;
+    }
+    .auth-tab.active { color: var(--primary); }
+    .auth-tab.active::after { content: ""; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--primary); }
+    
+    .error-msg { color: var(--error); font-size: 11px; margin-top: 8px; text-align: center; display: none; }
+    .success-msg { color: var(--success); font-size: 11px; margin-top: 8px; text-align: center; display: none; }
+
+    /* ── INFO BLOCKS ── */
+    .info-block { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .info-title { font-size: 11px; color: var(--primary); font-weight: 700; margin: 0 0 4px; text-transform: uppercase; }
+    .info-text { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.5; }
+
+    /* ── MAIN APP UI (Capsules/Vault) ── */
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 12px 0 8px; font-weight: 700; }
+    .capsule-list { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding-right: 4px; }
+    .empty-state { text-align: center; padding: 24px 16px; font-size: 12px; color: var(--text-muted); background: rgba(0, 0, 0, 0.15); border-radius: 10px; border: 1px dashed var(--border); }
+    
+    .capsule-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+    .capsule-item:hover { border-color: rgba(0, 255, 204, 0.3); background: rgba(255, 255, 255, 0.08); }
+    .capsule-info { display: flex; flex-direction: column; gap: 4px; max-width: 75%; }
+    .capsule-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .capsule-meta { font-size: 10px; color: var(--text-muted); }
+    .capsule-delete { color: var(--text-muted); background: none; border: none; cursor: pointer; font-size: 16px; padding: 0 4px; display: flex; align-items: center; justify-content: center; }
+    .capsule-delete:hover { color: var(--error); }
+    
+    .vault-dropzone { border: 2px dashed #333; border-radius: 8px; padding: 16px 12px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .vault-dropzone:hover { border-color: var(--primary); background: rgba(0, 255, 204, 0.04); }
+  </style>
+</head>
+<body>
+
+  <!-- ── HEADER ── -->
+  <div class="header">
+    <h2 class="title">
+      <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--primary); box-shadow:0 0 6px var(--primary);"></span>
+      Synapse AI Link
+    </h2>
+    <div class="header-right">
+      <div id="statusBadge" class="status-badge status-disconnected">
+        <span class="pulse-dot"></span>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <div id="headerAvatar" class="user-avatar" style="display:none;" title="Profile Menu"></div>
+    </div>
+  </div>
+
+  <!-- ── DROPDOWN MENU ── -->
+  <div id="profileDropdown" class="dropdown-menu">
+    <button class="dropdown-item nav-btn" data-target="profileScreen">👤 Personal Information</button>
+    <button class="dropdown-item nav-btn" data-target="securityScreen">🔒 Security</button>
+    <button class="dropdown-item nav-btn" data-target="guidelinesScreen">📜 Community Guidelines</button>
+    <button class="dropdown-item nav-btn" data-target="contactScreen">✉️ Contact & Support</button>
+    <div style="height:1px; background:var(--border); margin:4px 0;"></div>
+    <button class="dropdown-item" id="navLogoutBtn" style="color:var(--error);">🚪 Logout</button>
+  </div>
+
+  <!-- ── 1. AUTH SCREEN ── -->
+  <div id="authScreen" class="screen active">
+    <div style="text-align:center; margin-bottom:12px;">
+      <h3 style="margin:0; font-size:18px; font-weight:700;">Welcome to Synapse</h3>
+      <p style="margin:4px 0 0; font-size:12px; color:var(--text-muted);">Please log in to sync your context.</p>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button id="tabLogin" class="auth-tab active" style="flex:1;">Sign In</button>
+        <button id="tabRegister" class="auth-tab" style="flex:1;">Sign Up</button>
+      </div>
+      
+      <form id="authForm">
+        <div id="nameFieldContainer" class="input-group" style="display:none;">
+          <label class="input-label">Full Name</label>
+          <input type="text" id="authName" class="input-field" placeholder="John Doe">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Email Address</label>
+          <input type="email" id="authEmail" class="input-field" placeholder="name@domain.com" required>
+        </div>
+        <div class="input-group">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="input-label">Password</label>
+            <a href="#" id="forgotPasswordLink" style="font-size:10px; color:var(--primary); text-decoration:none; display:block; margin-bottom:4px;">Forgot?</a>
+          </div>
+          <input type="password" id="authPassword" class="input-field" placeholder="••••••••" required>
+        </div>
+        <button type="submit" id="btnAuthSubmit" class="btn" style="margin-top:8px;">Sign In</button>
+      </form>
+      
+      <div style="display: flex; align-items: center; margin: 16px 0; gap: 8px;">
+        <div style="flex: 1; height: 1px; background: var(--border);"></div>
+        <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight:600;">OR</span>
+        <div style="flex: 1; height: 1px; background: var(--border);"></div>
+      </div>
+      
+      <button id="btnGoogleLogin" class="btn btn-secondary">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C18.155 2.185 15.43 1 12.24 1 5.48 1 0 6.48 0 13.24s5.48 12.24 12.24 12.24c7.06 0 11.758-4.965 11.758-11.966 0-.807-.087-1.427-.193-2.23H12.24z"/>
+        </svg>
+        Continue with Google
+      </button>
+      <div id="authError" class="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- ── 2. MAIN APP SCREEN ── -->
+  <div id="mainAppScreen" class="screen">
+    <div class="section-title">Saved Synapses</div>
+    <div id="capsuleList" class="capsule-list">
+      <div class="empty-state">No context saved yet.</div>
+    </div>
+    <button id="generateBtn" class="btn" style="margin-top: 8px;">Generate Capsule</button>
+    
+    <div id="vaultSection" style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <div style="font-size:12px; font-weight:700; color:#ccc;">📚 Document Vault</div>
+        <div id="vaultCount" style="font-size:10px; color:#7c5cfc; font-weight:600;">0 files</div>
+      </div>
+      <div style="font-size:10px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">
+        Store your files here. Choose which ones to include when you generate each capsule.
+      </div>
+      <div id="vaultDropZone" class="vault-dropzone">
+        <div style="font-size:18px; margin-bottom:4px;">📄</div>
+        <div style="font-size:11px; color:#666;">Drop PDF, DOCX, PPTX here</div>
+        <div style="font-size:10px; color:#7c5cfc; margin-top:2px;">or click to browse</div>
+      </div>
+      <input type="file" id="vaultFileInput" accept=".pdf,.docx,.doc,.pptx,.ppt,.txt" multiple style="display:none"/>
+      <div id="vaultFilesList" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- ── 3. PROFILE SCREEN ── -->
+  <div id="profileScreen" class="screen">
+    <div class="screen-header">
+      <button class="back-btn nav-btn" data-target="mainAppScreen">← Back</button>
+      <h3 class="screen-title">Personal Info</h3>
+    </div>
+    <div id="profileImagePreview" class="user-avatar large"></div>
+    <form id="profileForm">
+      <div class="input-group">
+        <label class="input-label">Full Name</label>
+        <input type="text" id="profileName" class="input-field" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Email Address</label>
+        <input type="email" id="profileEmail" class="input-field" disabled title="Email is managed by your provider">
+      </div>
+      <div class="info-block">
+        <p class="info-title">Account Details</p>
+        <p class="info-text">Provider: <strong id="profileProviderDisplay" style="color:var(--text);">Email</strong></p>
+        <p class="info-text">Joined: <strong id="profileJoinedDisplay" style="color:var(--text);"></strong></p>
+      </div>
+      <button type="submit" id="btnSaveProfile" class="btn">Save Changes</button>
+      <div id="profileMsg" class="success-msg">Profile updated successfully!</div>
+    </form>
+  </div>
+
+  <!-- ── 4. SECURITY SCREEN ── -->
+  <div id="securityScreen" class="screen">
+    <div class="screen-header">
+      <button class="back-btn nav-btn" data-target="mainAppScreen">← Back</button>
+      <h3 class="screen-title">Security</h3>
+    </div>
+    <div id="securityGoogleMsg" class="info-block" style="display:none; text-align:center; padding:24px 12px;">
+      <div style="font-size:24px; margin-bottom:8px;">🛡️</div>
+      <p class="info-text" style="color:var(--text);">You sign in using Google. Password changes must be managed through your Google Account settings.</p>
+    </div>
+    <form id="securityForm">
+      <div class="input-group">
+        <label class="input-label">Current Password</label>
+        <input type="password" id="secCurrentPassword" class="input-field" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">New Password</label>
+        <input type="password" id="secNewPassword" class="input-field" required minlength="6">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Confirm New Password</label>
+        <input type="password" id="secConfirmPassword" class="input-field" required minlength="6">
+      </div>
+      <button type="submit" id="btnUpdatePassword" class="btn" style="margin-top:12px;">Update Password</button>
+      <div id="securityError" class="error-msg"></div>
+      <div id="securitySuccess" class="success-msg">Password updated successfully!</div>
+    </form>
+  </div>
+
+  <!-- ── 5. GUIDELINES SCREEN ── -->
+  <div id="guidelinesScreen" class="screen">
+    <div class="screen-header">
+      <button class="back-btn nav-btn" data-target="mainAppScreen">← Back</button>
+      <h3 class="screen-title">Community Guidelines</h3>
+    </div>
+    <div class="info-block" style="flex:1; overflow-y:auto; font-size:12px; line-height:1.6; color:var(--text-muted);">
+      <p style="color:var(--primary); font-weight:700; margin-top:0;">1. Respectful Usage</p>
+      <p>Please utilize Synapse AI responsibly. Abuse of the memory engine or excessive spamming of API endpoints is strictly prohibited.</p>
+      
+      <p style="color:var(--primary); font-weight:700;">2. Privacy & Data</p>
+      <p>Your capsules and intercepted files are stored locally. Only the content you explicitly choose is sent to AI models.</p>
+      
+      <p style="color:var(--primary); font-weight:700;">3. AI Disclaimers</p>
+      <p>Synapse interfaces with third-party LLMs (Google, OpenAI, Anthropic). We are not responsible for hallucinations or inaccuracies generated by these platforms.</p>
+    </div>
+  </div>
+
+  <!-- ── 6. CONTACT SCREEN ── -->
+  <div id="contactScreen" class="screen">
+    <div class="screen-header">
+      <button class="back-btn nav-btn" data-target="mainAppScreen">← Back</button>
+      <h3 class="screen-title">Contact & Support</h3>
+    </div>
+    <div class="info-block" style="text-align:center; padding:24px 12px;">
+      <div class="user-avatar large" style="background:var(--primary); color:#000;">HT</div>
+      <h4 style="margin:12px 0 4px; font-size:16px;">Hamza Taif (HTK)</h4>
+      <p style="font-size:12px; color:var(--text-muted); margin:0;">Creator & Lead Developer</p>
+      
+      <div style="margin-top:20px; display:flex; flex-direction:column; gap:8px;">
+        <button class="btn btn-secondary" onclick="alert('LinkedIn URL coming soon!')">
+          🔗 Connect on LinkedIn
+        </button>
+        <button class="btn btn-secondary" onclick="alert('Support email: support@synapseai.app')">
+          ✉️ Email Support
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
