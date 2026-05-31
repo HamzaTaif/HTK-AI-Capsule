@@ -3,7 +3,6 @@ import { getUserProfile, updateUserProfile } from "./profile.js";
 import { changePassword } from "./security.js";
 
 export function initAuthUI(onAuthSuccess) {
-  // Screens
   const screens = {
     auth: document.getElementById('authScreen'),
     main: document.getElementById('mainAppScreen'),

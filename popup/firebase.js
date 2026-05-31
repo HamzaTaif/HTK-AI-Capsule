@@ -1,6 +1,6 @@
-import { initializeApp } from "./firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updatePassword, updateProfile, reauthenticateWithCredential, EmailAuthProvider, sendPasswordResetEmail } from "./firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, query, where, getDocs, onSnapshot, limit, orderBy } from "./firebase-firestore.js";
+import { initializeApp } from "../libs/firebase/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updatePassword, updateProfile, reauthenticateWithCredential, EmailAuthProvider, sendPasswordResetEmail } from "../libs/firebase/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, query, where, getDocs, onSnapshot, limit, orderBy } from "../libs/firebase/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbmFyO_yCEigshmTdaGO7EZ7jcbWG-aX0",

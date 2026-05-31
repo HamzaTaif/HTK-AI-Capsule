@@ -590,6 +590,8 @@ document.addEventListener("DOMContentLoaded", function() {
   const generateBtn = document.getElementById("generateBtn");
   const tutorialSection = document.getElementById("tutorialSection");
 
+
+
   // Global delegate listener for removing docs and capsules
   document.addEventListener("click", function(e) {
     if (e.target.classList.contains("removeDocBtn")) {

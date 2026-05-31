@@ -1,4 +1,8 @@
-console.log("Synapse AI Link: In-context bridge active.");
+console.log("Synapse AI: In-context bridge active.");
+
+// ── SYNAPSE AI — DEVELOPER CONFIG ──────────────────────────────
+var GROQ_API_KEY = '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';
+// ───────────────────────────────────────────────────────────────
 
 // Auth state tracking
 window.synapseIsAuthenticated = false;
@@ -427,160 +431,78 @@ function getPlatformName() {
 // ==========================================
 // 3. MULTI-SITE DOM CONVERSATION SCRAPERS
 // ==========================================
-function extractChatGPT() {
-    const turns = [];
-    const articles = document.querySelectorAll("article");
-    articles.forEach(article => {
-        const userElem = article.querySelector("[data-message-author-role='user']");
-        const assistantElem = article.querySelector("[data-message-author-role='assistant']");
-
-        if (userElem) {
-            turns.push({ role: "user", text: getCleanText(userElem) });
-        } else if (assistantElem) {
-            turns.push({ role: "assistant", text: getCleanText(assistantElem) });
-        } else {
-            const isUser = article.querySelector(".whitespace-pre-wrap") !== null;
-            const textElem = article.querySelector(".markdown") || article.querySelector(".whitespace-pre-wrap");
-            if (textElem) {
-                turns.push({
-                    role: isUser ? "user" : "assistant",
-                    text: getCleanText(textElem)
-                });
-            }
+function extractRecentMessages() {
+  var messages = [];
+  
+  try {
+    // ChatGPT
+    if (window.location.hostname.includes('chatgpt.com') || window.location.hostname.includes('openai.com')) {
+      var elements = document.querySelectorAll(
+        '[data-message-author-role]'
+      );
+      elements.forEach(function(el) {
+        var role = el.getAttribute('data-message-author-role');
+        var text = el.innerText || el.textContent || '';
+        text = text.trim();
+        if (text.length > 0) {
+          messages.push({ 
+            role: role === 'assistant' ? 'assistant' : 'user', 
+            content: text,
+            text: text // For backward compatibility
+          });
         }
-    });
-    return turns;
-}
-
-function extractClaude() {
-    const turns = [];
-    const elements = document.querySelectorAll(".font-user-message, .font-claude-message, [data-testid='user-message'], [data-testid='claude-message'], .chat-turn");
-
-    elements.forEach(el => {
-        let role = "assistant";
-        if (el.classList.contains("font-user-message") ||
-            el.getAttribute("data-testid") === "user-message" ||
-            el.getAttribute("data-is-user") === "true" ||
-            el.closest(".font-user-message")) {
-            role = "user";
-        }
-
-        const contentNode = el.querySelector(".prose, div.text-foreground") || el;
-        const text = getCleanText(contentNode);
-        if (text) {
-            turns.push({ role, text });
-        }
-    });
-    return turns;
-}
-
-function extractGemini() {
-    const turns = [];
-    const elements = document.querySelectorAll("user-query, model-response, .query-content, .model-response, message-content");
-
-    elements.forEach(el => {
-        let role = "assistant";
-        if (el.tagName === "USER-QUERY" || el.classList.contains("query-content") || el.closest(".query-content")) {
-            role = "user";
-        } else if (el.tagName === "MODEL-RESPONSE" || el.classList.contains("model-response") || el.closest(".model-response")) {
-            role = "assistant";
-        }
-
-        const text = getCleanText(el);
-        if (text) {
-            turns.push({ role, text });
-        }
-    });
-    return turns;
-}
-
-function extractPerplexity() {
-    const turns = [];
-    const blocks = document.querySelectorAll("[class*='UserPrompt'], [class*='Answer'], .prose, div.relative.grid");
-
-    blocks.forEach(el => {
-        let role = "assistant";
-        const classStr = el.className.toLowerCase();
-
-        if (classStr.includes("userprompt") || el.querySelector("[class*='UserPrompt']")) {
-            role = "user";
-        }
-
-        const contentNode = el.querySelector(".prose") || el;
-        const text = getCleanText(contentNode);
-        if (text && text.length > 5) {
-            turns.push({ role, text });
-        }
-    });
-    return turns;
-}
-
-function extractFallback() {
-    const turns = [];
-    const bubbleContainers = document.querySelectorAll("[class*='message'], [class*='chat-turn'], [class*='bubble'], article, [role='log'] > div");
-
-    if (bubbleContainers.length > 0) {
-        bubbleContainers.forEach(container => {
-            const text = getCleanText(container);
-            if (text && text.length > 10) {
-                const classStr = container.className.toLowerCase();
-                let role = "assistant";
-                if (classStr.includes("user") || classStr.includes("prompt") || classStr.includes("query") || classStr.includes("human")) {
-                    role = "user";
-                }
-                turns.push({ role, text });
-            }
-        });
+      });
     }
 
-    if (turns.length === 0) {
-        const main = document.querySelector("main") || document.querySelector("#main") || document.body;
-        const blocks = main.querySelectorAll("p, pre");
-        blocks.forEach(b => {
-            const text = b.innerText.trim();
-            if (text.length > 15) {
-                turns.push({ role: "user", text });
-            }
-        });
-    }
-    return turns;
-}
-
-function extractConversation() {
-    let turns = [];
-    const platform = getPlatformName();
-
-    try {
-        if (platform === "chatgpt") turns = extractChatGPT();
-        else if (platform === "claude") turns = extractClaude();
-        else if (platform === "gemini") turns = extractGemini();
-        else if (platform === "perplexity") turns = extractPerplexity();
-
-        if (turns.length === 0) turns = extractFallback();
-    } catch (e) {
-        console.error("Synapse AI: Scraper error", e);
-        turns = extractFallback();
-    }
-
-    const cleanedTurns = [];
-    turns.forEach(turn => {
-        if (turn.text && turn.text.length > 2) {
-            const last = cleanedTurns[cleanedTurns.length - 1];
-            if (last && last.role === turn.role) {
-                last.text += "\n\n" + turn.text;
-            } else {
-                cleanedTurns.push({ role: turn.role, text: turn.text });
-            }
+    // Gemini
+    if (window.location.hostname.includes('gemini.google.com')) {
+      var allEls = Array.from(document.querySelectorAll(
+        '.user-query-text, .query-text, .model-response-text, .response-text, [data-response]'
+      ));
+      allEls.forEach(function(el) {
+        var isUser = el.classList.contains('user-query-text') || 
+                     el.classList.contains('query-text');
+        var text = (el.innerText || el.textContent || '').trim();
+        if (text.length > 0) {
+          messages.push({
+            role: isUser ? 'user' : 'assistant',
+            content: text,
+            text: text
+          });
         }
-    });
+      });
+    }
 
-    return cleanedTurns;
+    // Claude
+    if (window.location.hostname.includes('claude.ai')) {
+      var allEls = Array.from(document.querySelectorAll(
+        '[data-testid="human-turn"], [data-testid="ai-turn"]'
+      ));
+      allEls.forEach(function(el) {
+        var isUser = el.getAttribute('data-testid') === 'human-turn';
+        var text = (el.innerText || el.textContent || '').trim();
+        if (text.length > 0) {
+          messages.push({
+            role: isUser ? 'user' : 'assistant',
+            content: text,
+            text: text
+          });
+        }
+      });
+    }
+
+  } catch(e) {
+    console.warn('Synapse: Message extraction error:', e);
+  }
+
+  console.log('Synapse: Extracted', messages.length, 'total messages');
+  return messages;
 }
 
 function generateSmartTitle(turns) {
     const firstUserMsg = turns.find(t => t.role === "user");
-    if (firstUserMsg && firstUserMsg.text) {
-        let clean = firstUserMsg.text.replace(/[^\w\s-]/g, "").replace(/\s+/g, " ").trim();
+    if (firstUserMsg && (firstUserMsg.text || firstUserMsg.content)) {
+        let clean = (firstUserMsg.text || firstUserMsg.content).replace(/[^\w\s-]/g, "").replace(/\s+/g, " ").trim();
         if (clean.length > 25) {
             return clean.substring(0, 22) + "...";
         }
@@ -968,7 +890,7 @@ function togglePopover() {
     } else {
         const titleInput = document.getElementById("synapse-title-input");
         if (titleInput) {
-            const conversation = extractConversation();
+            const conversation = extractRecentMessages();
             titleInput.value = generateSmartTitle(conversation);
         }
 
@@ -1720,141 +1642,145 @@ async function generateCapsuleLocally(conversationData) {
 
 // ── REPLACE THIS KEY if you hit 429 rate limit errors ──
 // Get a free key at: https://console.groq.com/keys
-const GROQ_API_KEY = "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";
 
 async function generateCapsuleHybrid(conversationData) {
-    const messages  = conversationData.messages  || [];
-    const documents = conversationData.documents || [];
+  
+  // Correctly pull all data from conversationData object
+  var messages = conversationData.messages || [];
+  var documents = conversationData.documents || [];
+  var platform = conversationData.platform || window.location.hostname;
 
-    const recentMessages = messages.slice(-6);
+  var recentMessages = messages.slice(-20);
 
-    const shortTranscript = recentMessages
-        .map(m => `${m.role}: ${(m.content || '').slice(0, 300)}`)
-        .join('\n');
+  var shortTranscript = recentMessages
+    .map(function(m) {
+      return m.role + ': ' + (m.content || m.text || '').slice(0, 500);
+    })
+    .join('\n');
 
-    const shortDocSummary = documents.length > 0
-        ? documents.map(d =>
-            `${d.title}: ${(d.compressedText || '').slice(0, 400)}`
-          ).join('\n')
-        : 'No documents attached.';
+  var shortDocSummary = documents.length > 0
+    ? documents.map(function(d) {
+        return (d.title || 'Untitled') + ': ' + 
+          (d.compressedText || '').slice(0, 400);
+      }).join('\n')
+    : 'No documents attached.';
 
-    const tinyPrompt = `Analyze and return JSON only. No markdown. No explanation.
+  var tinyPrompt = 'Analyze and return JSON only. No markdown. No explanation.\n\n' +
+    'Chat:\n' + shortTranscript + '\n\n' +
+    'Docs:\n' + shortDocSummary + '\n\n' +
+    'Return this exact JSON:\n' +
+    '{\n' +
+    '  "project": "specific descriptive title",\n' +
+    '  "topics": ["real subject topics only"],\n' +
+    '  "important_concepts": ["concept: what it means"],\n' +
+    '  "current_goal": "one complete sentence",\n' +
+    '  "unresolved_issues": ["real unfinished problems"],\n' +
+    '  "user_preferences": ["how user likes to learn"],\n' +
+    '  "document_summary": "one sentence about the documents"\n' +
+    '}';
 
-Chat:
-${shortTranscript}
 
-Docs:
-${shortDocSummary}
-
-Return this exact JSON:
-{
-  "project": "specific descriptive title like OOP Exam Prep or DLD Study",
-  "topics": ["real subject topics only — like inheritance, encapsulation, NOT random words"],
-  "important_concepts": ["concept name: what it actually means"],
-  "current_goal": "one complete sentence describing what user was trying to do",
-  "unresolved_issues": ["real unfinished problems only"],
-  "user_preferences": ["how user likes to learn"],
-  "document_summary": "one sentence describing what the documents contain"
-}`;
-
-    // Show exact error instead of hiding it
-    let response;
-    try {
-        response = await fetch(
-            'https://api.groq.com/openai/v1/chat/completions',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + GROQ_API_KEY
-                },
-                body: JSON.stringify({
-                    model: 'llama-3.1-8b-instant',
-                    messages: [
-                        {
-                            role: 'system',
-                            content: 'You are a semantic memory engine. Return raw JSON only. No markdown. No explanation. No code fences.'
-                        },
-                        {
-                            role: 'user',
-                            content: tinyPrompt
-                        }
-                    ],
-                    temperature: 0,
-                    max_tokens: 500
-                })
-            }
-        );
-    } catch (networkErr) {
-        // Throw real network error — do NOT fall back silently
-        throw new Error('Groq network error: ' + networkErr.message +
-            ' — Check manifest.json has https://api.groq.com/* in host_permissions');
-    }
-
-    if (!response.ok) {
-        if (response.status === 401) {
-            throw new Error(
-                '❌ Invalid Groq API key. ' +
-                'Go to console.groq.com/keys and get a new one.'
-            );
-        }
-        if (response.status === 429) {
-            throw new Error(
-                '⚠️ Groq daily limit reached (14,400 free requests). ' +
-                'This resets at midnight automatically. ' +
-                'Or get a fresh key at console.groq.com/keys.'
-            );
-        }
-        const errText = await response.text();
-        // Throw real API error — do NOT fall back silently
-        throw new Error('Groq API error ' + response.status + ': ' + errText);
-    }
-
-    const data = await response.json();
-
-    if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Groq returned empty response: ' + JSON.stringify(data));
-    }
-
-    const rawText = data.choices[0].message.content.trim();
-    const cleaned = rawText
-        .replace(/^```json\n?/, '')
-        .replace(/^```\n?/, '')
-        .replace(/\n?```$/, '')
-        .trim();
-
-    let aiCapsule;
-    try {
-        aiCapsule = JSON.parse(cleaned);
-    } catch (e) {
-        throw new Error('Groq JSON parse failed. Raw output: ' + cleaned.slice(0, 200));
-    }
-
-    return {
-        capsule_version    : '2.2-hybrid',
-        source_platform    : conversationData.platform || window.location.hostname,
-        project            : aiCapsule.project,
-        topics             : aiCapsule.topics             || [],
-        important_concepts : aiCapsule.important_concepts || [],
-        current_goal       : aiCapsule.current_goal       || '',
-        unresolved_issues  : aiCapsule.unresolved_issues  || [],
-        user_preferences   : aiCapsule.user_preferences   || [],
-        // Full recent context stored locally — never sent to Groq
-        recent_context : messages.slice(-8).map(m => ({
-            role    : m.role,
-            content : (m.content || '').slice(0, 400)
-        })),
-        document_context : {
-            documents_present : documents.length > 0,
-            document_summary  : aiCapsule.document_summary || '',
-            documents : documents.map(d => ({
-                title       : d.title,
-                type        : d.type,
-                key_content : (d.compressedText || '').slice(0, 1500)
-            }))
+  var response;
+  try {
+    response = await fetch(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + GROQ_API_KEY
         },
-        handoff : `User is working on: ${aiCapsule.project}. Goal: ${aiCapsule.current_goal}. ${documents.length > 0 ? documents.length + ' document(s) are in document_context with extracted content.' : 'No documents.'} Continue naturally from where they left off.`
-    };
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a semantic memory engine. Return raw JSON only. No markdown. No explanation. No code fences.'
+            },
+            {
+              role: 'user',
+              content: tinyPrompt
+            }
+          ],
+          temperature: 0,
+          max_tokens: 1000
+        })
+      }
+    );
+  } catch (networkErr) {
+    throw new Error('Network error: ' + networkErr.message);
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Invalid Groq API key. Go to console.groq.com/keys');
+    }
+    if (response.status === 429) {
+      throw new Error('Groq daily limit reached. Resets at midnight.');
+    }
+    throw new Error('Groq API error: ' + response.status);
+  }
+
+  var data = await response.json();
+
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    throw new Error('Empty response from Groq.');
+  }
+
+  var rawText = data.choices[0].message.content.trim();
+  var cleaned = rawText
+    .replace(/^```json\n?/, '')
+    .replace(/^```\n?/, '')
+    .replace(/\n?```$/, '')
+    .trim();
+
+  var aiCapsule;
+  try {
+    aiCapsule = JSON.parse(cleaned);
+  } catch (e) {
+    throw new Error('Invalid JSON from Groq: ' + cleaned.slice(0, 100));
+  }
+
+  // Build final capsule
+  return {
+    capsule_version: '2.2-hybrid',
+    source_platform: platform,
+    project: aiCapsule.project || 'Unknown Project',
+    topics: aiCapsule.topics || [],
+    important_concepts: aiCapsule.important_concepts || [],
+    current_goal: aiCapsule.current_goal || '',
+    unresolved_issues: aiCapsule.unresolved_issues || [],
+    user_preferences: aiCapsule.user_preferences || [],
+    recent_context: messages.slice(-30).map(function(m) {
+      return {
+        role: m.role,
+        content: (m.content || m.text || '').slice(0, 600)
+      };
+    }),
+    document_context: {
+      documents_present: documents.length > 0,
+      document_summary: aiCapsule.document_summary || '',
+      documents: documents.map(function(d) {
+        return {
+          title: d.title || 'Untitled',
+          type: d.type || 'unknown',
+          key_content: (d.compressedText || '').slice(0, 1500)
+        };
+      })
+    },
+    handoff: 'This capsule contains a semantic summary of the ' +
+      'COMPLETE conversation from the beginning. ' +
+      'The project, topics, concepts and goal fields reflect ' +
+      'the entire chat history. ' +
+      'The recent_context shows the last exchanges. ' +
+      'User is working on: ' + (aiCapsule.project || 'unknown') + '. ' +
+      'Their goal: ' + (aiCapsule.current_goal || 'unknown') + '. ' +
+      (documents.length > 0 
+        ? documents.length + ' document(s) content is in document_context. '
+        : 'No documents. ') +
+      'When user sends first message, continue naturally ' +
+      'as if you were in the original conversation.'
+  };
 }
 
 // ── SILENT FILE INTERCEPTOR ──────────────────────────────────────
@@ -2035,7 +1961,7 @@ async function generateCapsule() {
     const loadingInterval = showLoadingAnimation('synapse-loading-text');
 
     try {
-        const conversation = extractConversation();
+        const conversation = extractRecentMessages();
         if (conversation.length === 0) {
             throw new Error("No messages detected in this conversation.");
         }
@@ -2055,11 +1981,11 @@ async function generateCapsule() {
             'docs for this conversation');
 
         // Vault docs handled separately below (user chooses)
-        const allDocuments = [...thisConversationDocs];
+        var documents = [...thisConversationDocs];
 
         console.log('Synapse: Documents for capsule:', 
-            allDocuments.length,
-            allDocuments.map(d => d.title + '(' + 
+            documents.length,
+            documents.map(d => d.title + '(' + 
                 Math.round((d.charCount||0)/1000) + 'k)').join(', ')
         );
 
@@ -2330,23 +2256,29 @@ function initializeWithRetry(attempts = 0) {
                     sendResponse({ error: "User is not authenticated. Please log in via the extension popup." });
                     return true;
                 }
-                const selectedDocs = request.selectedDocs || [];
-                const messages = extractRecentMessages();
+                // selectedDocs comes from popup document selector
+                // Always an array — empty if user selected none
+                var selectedDocs = request.selectedDocs || [];
+
+                var messages = extractRecentMessages();
 
                 generateCapsuleHybrid({
-                    messages,
+                    messages: messages,
                     documents: selectedDocs,
                     platform: window.location.hostname
-                }).then(capsule => {
+                }).then(function(capsule) {
                     capsule.id = Date.now().toString();
                     capsule.timestamp = new Date().toISOString();
-                    safeStorageGet(['capsules'], (result) => {
-                        const capsules = result.capsules || [];
+
+                    safeStorageGet(['capsules'], function(result) {
+                        var capsules = result.capsules || [];
                         capsules.push(capsule);
-                        safeStorageSet({ capsules });
+                        safeStorageSet({ capsules: capsules });
                     });
-                    sendResponse({ success: true });
-                }).catch(err => {
+
+                    sendResponse({ success: true, capsule: capsule });
+
+                }).catch(function(err) {
                     sendResponse({ error: err.message });
                 });
 
@@ -2390,19 +2322,37 @@ function reconstructContext(capsule) {
         const hasDocs = dc.documents_present && dc.documents && dc.documents.length > 0;
         const recentCtx = capsule.recent_context || [];
 
-        return `I'm continuing a session from another AI.
-
-Project: ${capsule.project || capsule.title || 'Unknown'}
-Topics: ${(capsule.topics || []).join(', ') || 'N/A'}
-Key Concepts: ${(capsule.important_concepts || []).join(', ') || 'N/A'}
-Current Goal: ${capsule.current_goal || 'Continue the conversation.'}
-Unresolved: ${(capsule.unresolved_issues || []).join(', ') || 'none'}
-Preferences: ${(capsule.user_preferences || []).join(', ') || 'none'}${hasDocs ? '\nDocuments shared: ' + dc.documents.map(d => d.title).join(', ') : ''}
-
-Recent conversation:
-${recentCtx.map(m => `[${m.role}]: ${m.content}`).join('\n')}${hasDocs ? '\n\nDocument content:\n' + dc.documents.map(d => `${d.title}: ${d.key_content}`).join('\n') : ''}
-
-Confirm you understand and wait for my next message.`;
+        var dropMessage = 
+          'I am continuing a session from another AI. ' +
+          'The context capsule below summarizes my COMPLETE previous conversation. ' +
+          'Read everything carefully before responding.\n\n' +
+          
+          'PROJECT: ' + capsule.project + '\n' +
+          'TOPICS: ' + (capsule.topics || []).join(', ') + '\n' +
+          'KEY CONCEPTS: ' + (capsule.important_concepts || []).join(', ') + '\n' +
+          'MY GOAL: ' + capsule.current_goal + '\n' +
+          'UNRESOLVED: ' + (capsule.unresolved_issues || []).join(', ') + '\n' +
+          'MY PREFERENCES: ' + (capsule.user_preferences || []).join(', ') + '\n\n' +
+          
+          (capsule.document_context && capsule.document_context.documents_present
+            ? 'DOCUMENTS I SHARED:\n' + 
+              capsule.document_context.documents.map(function(d) {
+                return d.title + ':\n' + d.key_content;
+              }).join('\n\n') + '\n\n'
+            : '') +
+          
+          'CONVERSATION SUMMARY (covers full chat from beginning):\n' +
+          capsule.handoff + '\n\n' +
+          
+          'RECENT MESSAGES:\n' +
+          (capsule.recent_context || []).map(function(m) {
+            return '[' + m.role.toUpperCase() + ']: ' + m.content;
+          }).join('\n') + '\n\n' +
+          
+          'Confirm you understand my complete context and ' +
+          'wait for my next message.';
+        
+        return dropMessage;
     }
 
     // Legacy structured_memory path (v2.0)

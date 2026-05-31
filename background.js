@@ -9,7 +9,7 @@ import {
     getDocs,
     query,
     where
-} from "./firebase.js";
+} from "./popup/firebase.js";
 
 // Helper to wait for Firebase Auth to initialize from IndexedDB
 function getCurrentUserAsync() {
