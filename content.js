@@ -344,6 +344,264 @@ const styles = `
     background: rgba(0, 255, 204, 0.12) !important;
     border-color: #00ffcc !important;
 }
+
+/* Memory Inspector CSS */
+.synapse-inspector-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    justify-content: center;
+    align-items: center;
+    z-index: 2147483646;
+}
+.synapse-inspector-backdrop.show {
+    display: flex;
+}
+.synapse-inspector-modal {
+    width: 800px;
+    max-width: 95vw;
+    height: 600px;
+    background: rgba(18, 18, 24, 0.96);
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.85);
+    font-family: 'Outfit', sans-serif;
+    color: #f3f4f6;
+    overflow: hidden;
+    animation: synapse-modal-fade 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+}
+@keyframes synapse-modal-fade {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+.synapse-inspector-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.synapse-inspector-title {
+    font-size: 16px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #00ffcc, #0099ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.synapse-inspector-subtitle {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+.synapse-inspector-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+.synapse-inspector-sidebar {
+    width: 200px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0,0,0,0.15);
+}
+.synapse-inspector-tab-btn {
+    padding: 10px 14px;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.synapse-inspector-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: white;
+}
+.synapse-inspector-tab-btn.active {
+    background: rgba(0, 255, 204, 0.1);
+    color: #00ffcc;
+    font-weight: 600;
+}
+.synapse-inspector-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+}
+.synapse-inspector-content.active {
+    display: flex;
+}
+.synapse-inspector-footer {
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: rgba(0,0,0,0.1);
+}
+.inspector-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.inspector-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #9ca3af;
+    letter-spacing: 0.5px;
+}
+.inspector-input, .inspector-textarea, .inspector-select {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: white;
+    font-size: 13px;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: all 0.2s;
+}
+.inspector-input:focus, .inspector-textarea:focus, .inspector-select:focus {
+    border-color: #00ffcc;
+    box-shadow: 0 0 8px rgba(0, 255, 204, 0.2);
+    outline: none;
+}
+.inspector-textarea {
+    resize: vertical;
+}
+.inspector-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.inspector-fact-row, .inspector-decision-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: rgba(255,255,255,0.02);
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: border-color 0.2s;
+}
+.inspector-fact-row.p1 {
+    border-left: 4px solid #00ffcc;
+}
+.inspector-fact-row.p2 {
+    border-left: 4px solid #0099ff;
+}
+.inspector-fact-row.p3 {
+    border-left: 4px solid #6b7280;
+}
+.inspector-btn-delete {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.inspector-btn-delete:hover {
+    background: #ef4444;
+    color: white;
+}
+.inspector-btn-add {
+    background: rgba(0, 255, 204, 0.1);
+    border: 1px solid rgba(0, 255, 204, 0.2);
+    color: #00ffcc;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    transition: all 0.2s;
+    width: max-content;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.inspector-btn-add:hover {
+    background: rgba(0, 255, 204, 0.2);
+}
+.inspector-btn-confirm {
+    background: linear-gradient(135deg, #00ffcc, #0099ff);
+    color: #0c0c14;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.inspector-btn-confirm:hover {
+    box-shadow: 0 4px 15px rgba(0, 255, 204, 0.4);
+    transform: translateY(-1px);
+}
+.inspector-btn-cancel {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.inspector-btn-cancel:hover {
+    background: rgba(255,255,255,0.12);
+}
+.inspector-badge-count {
+    background: rgba(255,255,255,0.1);
+    color: #f3f4f6;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+.inspector-fact-priority {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    font-size: 12px;
+    border-radius: 6px;
+    padding: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+}
 `;
 
 if (!document.getElementById("synapse-styles")) {
@@ -433,88 +691,285 @@ function getPlatformName() {
 // ==========================================
 function extractRecentMessages() {
   var messages = [];
-  
+
   try {
-    // ChatGPT
-    if (window.location.hostname.includes('chatgpt.com') || window.location.hostname.includes('openai.com')) {
-      var elements = document.querySelectorAll(
+
+    // ── CHATGPT ──────────────────────────────────────────────────
+    if (window.location.hostname.includes('chatgpt.com')) {
+
+      // Try multiple selectors — ChatGPT changes their DOM frequently
+      var found = false;
+
+      // Selector 1 — data-message-author-role (most reliable)
+      var byRole = document.querySelectorAll(
         '[data-message-author-role]'
       );
-      elements.forEach(function(el) {
-        var role = el.getAttribute('data-message-author-role');
-        var text = el.innerText || el.textContent || '';
-        text = text.trim();
-        if (text.length > 0) {
-          messages.push({ 
-            role: role === 'assistant' ? 'assistant' : 'user', 
-            content: text,
-            text: text // For backward compatibility
+      if (byRole.length > 0) {
+        found = true;
+        byRole.forEach(function(el) {
+          var role = el.getAttribute('data-message-author-role');
+          var text = (el.innerText || el.textContent || '').trim();
+          if (text.length > 0) {
+            messages.push({ 
+              role: role === 'assistant' ? 'assistant' : 'user', 
+              content: text 
+            });
+          }
+        });
+      }
+
+      // Selector 2 — article tags with data-testid
+      if (!found || messages.length < 3) {
+        messages = [];
+        var articles = document.querySelectorAll(
+          'article[data-testid^="conversation-turn"]'
+        );
+        if (articles.length > 0) {
+          found = true;
+          articles.forEach(function(el) {
+            var isUser = el.querySelector(
+              '[data-message-author-role="user"]'
+            );
+            var text = (el.innerText || el.textContent || '').trim();
+            if (text.length > 0) {
+              messages.push({
+                role: isUser ? 'user' : 'assistant',
+                content: text
+              });
+            }
           });
         }
-      });
+      }
+
+      // Selector 3 — group divs (older ChatGPT layout)
+      if (!found || messages.length < 3) {
+        messages = [];
+        var groups = document.querySelectorAll(
+          '.group\\/conversation-turn, .group.w-full'
+        );
+        if (groups.length > 0) {
+          found = true;
+          groups.forEach(function(el) {
+            var isUser = el.classList.contains('dark:bg-transparent') ||
+              el.querySelector('[data-message-author-role="user"]');
+            var text = (el.innerText || el.textContent || '').trim();
+            if (text.length > 5) {
+              messages.push({
+                role: isUser ? 'user' : 'assistant',
+                content: text
+              });
+            }
+          });
+        }
+      }
+
+      // Selector 4 — broadest fallback
+      if (!found || messages.length < 3) {
+        messages = [];
+        var allDivs = document.querySelectorAll(
+          'div[class*="message"], div[class*="turn"], div[class*="chat"]'
+        );
+        allDivs.forEach(function(el) {
+          var text = (el.innerText || el.textContent || '').trim();
+          if (text.length > 20 && text.length < 50000) {
+            var isUser = el.className.includes('user') ||
+              el.querySelector('[data-message-author-role="user"]');
+            messages.push({
+              role: isUser ? 'user' : 'assistant',
+              content: text
+            });
+          }
+        });
+      }
+
+      console.log('Synapse: ChatGPT extraction found', 
+        messages.length, 'messages');
     }
 
-    // Gemini
+    // ── GEMINI ───────────────────────────────────────────────────
     if (window.location.hostname.includes('gemini.google.com')) {
-      var allEls = Array.from(document.querySelectorAll(
-        '.user-query-text, .query-text, .model-response-text, .response-text, [data-response]'
-      ));
-      allEls.forEach(function(el) {
-        var isUser = el.classList.contains('user-query-text') || 
-                     el.classList.contains('query-text');
-        var text = (el.innerText || el.textContent || '').trim();
-        if (text.length > 0) {
-          messages.push({
-            role: isUser ? 'user' : 'assistant',
-            content: text,
-            text: text
-          });
-        }
-      });
+      
+      var turns = document.querySelectorAll(
+        'user-query, model-response, ' +
+        '.user-query, .model-response, ' +
+        '[data-turn-role], ' +
+        '.conversation-container > div'
+      );
+
+      if (turns.length > 0) {
+        turns.forEach(function(el) {
+          var tagName = el.tagName.toLowerCase();
+          var className = el.className || '';
+          var isUser = tagName === 'user-query' || 
+            className.includes('user-query') ||
+            el.getAttribute('data-turn-role') === 'user';
+          var text = (el.innerText || el.textContent || '').trim();
+          if (text.length > 5) {
+            messages.push({
+              role: isUser ? 'user' : 'assistant',
+              content: text
+            });
+          }
+        });
+      } else {
+        // Fallback for Gemini
+        var allEls = document.querySelectorAll(
+          '[class*="query"], [class*="response"], [class*="message"]'
+        );
+        allEls.forEach(function(el) {
+          var text = (el.innerText || el.textContent || '').trim();
+          if (text.length > 10) {
+            var isUser = (el.className || '').includes('query') ||
+              (el.className || '').includes('user');
+            messages.push({
+              role: isUser ? 'user' : 'assistant',
+              content: text
+            });
+          }
+        });
+      }
+
+      console.log('Synapse: Gemini extraction found', 
+        messages.length, 'messages');
     }
 
-    // Claude
+    // ── CLAUDE ───────────────────────────────────────────────────
     if (window.location.hostname.includes('claude.ai')) {
-      var allEls = Array.from(document.querySelectorAll(
+
+      var turns = document.querySelectorAll(
         '[data-testid="human-turn"], [data-testid="ai-turn"]'
-      ));
-      allEls.forEach(function(el) {
-        var isUser = el.getAttribute('data-testid') === 'human-turn';
-        var text = (el.innerText || el.textContent || '').trim();
-        if (text.length > 0) {
-          messages.push({
-            role: isUser ? 'user' : 'assistant',
-            content: text,
-            text: text
-          });
-        }
-      });
+      );
+
+      if (turns.length > 0) {
+        turns.forEach(function(el) {
+          var isUser = el.getAttribute('data-testid') === 'human-turn';
+          var text = (el.innerText || el.textContent || '').trim();
+          if (text.length > 0) {
+            messages.push({
+              role: isUser ? 'user' : 'assistant',
+              content: text
+            });
+          }
+        });
+      } else {
+        // Fallback for Claude
+        var allEls = document.querySelectorAll(
+          '[class*="human"], [class*="assistant"], [class*="message"]'
+        );
+        allEls.forEach(function(el) {
+          var text = (el.innerText || el.textContent || '').trim();
+          if (text.length > 10) {
+            var isUser = (el.className || '').includes('human');
+            messages.push({
+              role: isUser ? 'user' : 'assistant',
+              content: text
+            });
+          }
+        });
+      }
+
+      console.log('Synapse: Claude extraction found', 
+        messages.length, 'messages');
     }
 
   } catch(e) {
-    console.warn('Synapse: Message extraction error:', e);
+    console.warn('Synapse: Extraction error:', e);
   }
 
-  console.log('Synapse: Extracted', messages.length, 'total messages');
-  return messages;
+  // Remove duplicates — same text appearing twice
+  var seen = new Set();
+  var unique = [];
+  messages.forEach(function(m) {
+    var key = (m.content || '').slice(0, 50);
+    if (!seen.has(key) && (m.content || '').length > 5) {
+      seen.add(key);
+      m.text = m.content; // backward compatibility
+      unique.push(m);
+    }
+  });
+
+  console.log('Synapse: Final extraction:', unique.length, 
+    'unique messages from', window.location.hostname);
+
+  return unique;
+}
+
+function hasForbiddenText(t) {
+  if (!t || typeof t !== 'string') return false;
+  var forbiddenWords = ['be careful', 'probe', 'connected', 'warning', 'error', 'failing', 'stuck', 'completed', 'done', 'next', 'step', 'reply'];
+  return forbiddenWords.some(function(w) { return t.toLowerCase().indexOf(w) !== -1; });
+}
+
+function validateProjectName(name) {
+  if (!name || typeof name !== 'string') return false;
+  var trimmed = name.trim();
+  if (trimmed.length < 4) return false;
+  
+  var words = trimmed.split(/\s+/).filter(Boolean);
+  var hasTitleIndicator = /controller|system|prep|manager|tracker|dashboard|tool|app|interface|website|hardware|software|firmware/i.test(trimmed);
+  if (words.length < 3 && !hasTitleIndicator) {
+    return false;
+  }
+  
+  var forbidden = ['connected', 'completed', 'done', 'next', 'step', 'reply', 'probe', 'be careful', 'warning', 'error', 'failing', 'stuck'];
+  var containsForbidden = forbidden.some(function(w) {
+    return trimmed.toLowerCase().indexOf(w) !== -1;
+  });
+  if (containsForbidden) {
+    return false;
+  }
+  
+  return true;
+}
+
+function validateProjectPurpose(purpose) {
+  if (!purpose || typeof purpose !== 'string') return false;
+  var trimmed = purpose.trim();
+  if (trimmed.length < 30) return false;
+  
+  var words = trimmed.split(/\s+/).filter(Boolean);
+  if (words.length < 5) return false;
+  
+  var stepPrefixes = /^(?:wiring|connecting|fixing|debugging|testing|stuck on|working on|adding|implementing|writing)\b/i;
+  if (stepPrefixes.test(trimmed)) {
+    return false;
+  }
+  
+  // Reject short status statements
+  if (/^[A-Za-z0-9_\s]{2,15}\s+(?:connected|completed|done|stuck|failed|failing)\b/i.test(trimmed)) {
+    return false;
+  }
+  
+  return true;
 }
 
 function generateSmartTitle(turns) {
+    // 1. Try to find a title from the page title first, as it is the most reliable chat summary!
+    let pageTitle = document.title || "";
+    pageTitle = pageTitle.replace(/Chat(GPT)?|Claude|Gemini|Perplexity/gi, "").replace(/[^\w\s-]/g, "").replace(/\s+/g, " ").trim();
+    if (validateProjectName(pageTitle)) {
+        return pageTitle;
+    }
+
+    // 2. Try the first user message but extract only title-like phrases (noun phrases) or first sentence
     const firstUserMsg = turns.find(t => t.role === "user");
     if (firstUserMsg && (firstUserMsg.text || firstUserMsg.content)) {
         let clean = (firstUserMsg.text || firstUserMsg.content).replace(/[^\w\s-]/g, "").replace(/\s+/g, " ").trim();
-        if (clean.length > 25) {
-            return clean.substring(0, 22) + "...";
+        const match = clean.match(/(?:building|creating|making|developing|working on|prep for)\s+([^.\n]{10,50})/i);
+        if (match) {
+            const candidate = match[1].trim();
+            if (validateProjectName(candidate)) {
+                return candidate;
+            }
         }
-        return clean || "AI Conversation";
+        
+        const firstLine = clean.split('\n')[0].trim();
+        if (validateProjectName(firstLine) && firstLine.length < 60) {
+            return firstLine;
+        }
     }
 
-    let pageTitle = document.title || "";
-    pageTitle = pageTitle.replace(/Chat(GPT)?|Claude|Gemini|Perplexity/gi, "").replace(/[^\w\s-]/g, "").trim();
-    if (pageTitle.length > 20) {
-        pageTitle = pageTitle.substring(0, 18) + "...";
-    }
-    return pageTitle || `Synapse - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    return "";
 }
 
 
@@ -1008,8 +1463,8 @@ function renderListItems(capsules) {
             const popover = document.getElementById("synapse-popover");
             if (popover) popover.classList.remove("show");
 
-            // Use dropContextAndSend for silent auto-submit with handoff wrapper
-            dropContextAndSend(capsule, inputBox);
+            // Use dropCapsule for silent auto-submit with handoff wrapper
+            dropCapsule(capsule);
         });
 
         listContainer.appendChild(item);
@@ -1637,11 +2092,474 @@ async function generateCapsuleLocally(conversationData) {
 }
 
 // ==========================================
+// ==========================================
+// 7.4 CONTINUOUS FACT EXTRACTOR
+// ==========================================
+
+var FACT_PATTERNS = [
+  // Hardware / Electronics
+  {
+    type: 'hardware_configuration',
+    patterns: [
+      /(?:pin|Pin)\s*(\d+)\s*(?:=|is|to|for|connected to|→)\s*([^\n,\.]{2,40})/gi,
+      /([A-Za-z0-9_\s]{2,20})\s*connected to\s*([^\n,\.]{2,40})/gi,
+      /([A-Za-z0-9_\s]{2,20})\s*(?:=|is)\s*(?:pin|Pin)\s*(\d+)/gi,
+      /I2C address\s*(?:is|=)\s*(0x[0-9A-Fa-f]+)/gi,
+      /([A-Za-z0-9_]+)\s*(?:address|addr)\s*(?:is|=)\s*(0x[0-9A-Fa-f]+)/gi
+    ]
+  },
+  // Code / Variables
+  {
+    type: 'code_detail',
+    patterns: [
+      /(?:const|let|var|int|float|String|bool)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^\n;]{1,60})/gi,
+      /(?:function|void|def)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/gi,
+      /(?:class)\s+([A-Za-z_][A-Za-z0-9_]*)/gi,
+      /#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+([^\n]{1,40})/gi
+    ]
+  },
+  // Database / API
+  {
+    type: 'system_configuration',
+    patterns: [
+      /(?:database|db|collection)\s+(?:name\s+)?(?:is|=|named)\s+([A-Za-z0-9_-]{2,40})/gi,
+      /(?:table|schema)\s+(?:name\s+)?(?:is|=|named)\s+([A-Za-z0-9_-]{2,40})/gi,
+      /(?:API|endpoint|route|url)\s+(?:is|=)?\s+(\/[A-Za-z0-9\/_-]{2,60})/gi,
+      /(?:port)\s+(?:is|=|:)\s+(\d{2,5})/gi,
+      /(?:host|server)\s+(?:is|=|:)\s+([A-Za-z0-9._-]{4,60})/gi
+    ]
+  },
+  // Decisions
+  {
+    type: 'user_decision',
+    patterns: [
+      /(?:decided|chose|selected|switched|going with|will use|using)\s+([^\n,\.]{4,60})/gi,
+      /(?:rejected|not using|dropped|removed|replaced)\s+([^\n,\.]{4,60})/gi,
+      /(?:instead of|rather than)\s+([^\n,\.]{4,60})/gi
+    ]
+  },
+  // Bugs / State
+  {
+    type: 'system_state',
+    patterns: [
+      /([A-Za-z0-9_\s]{2,30})\s+(?:is|still|remains?)\s+(?:not working|broken|black|blank|stuck|failing|unresolved)/gi,
+      /([A-Za-z0-9_\s]{2,30})\s+(?:is|now)\s+(?:working|fixed|done|complete|resolved)/gi,
+      /(?:bug|error|issue|problem)\s*(?:in|with|on)?\s*([^\n,\.]{4,50})/gi
+    ]
+  },
+  // Study / Academic
+  {
+    type: 'study_fact',
+    patterns: [
+      /([A-Z][a-z]+(?:\s[A-Za-z]+){0,3})\s+(?:is defined as|means|refers to)\s+([^\n\.]{4,80})/gi,
+      /(?:formula|equation)\s*(?:for|of)?\s*([^\n=]{4,30})\s*(?:is|=)\s*([^\n]{4,60})/gi,
+      /(?:exam|test|quiz)\s+(?:is on|covers?|includes?)\s+([^\n,\.]{4,60})/gi
+    ]
+  }
+];
+
+function calculateFactImportance(factText, type) {
+  var text = (factText || '').toLowerCase();
+  
+  // Priority 1 triggers (always preserve)
+  var priority1Keywords = [
+    'led', 'relay', 'motor', 'arduino', 'esp32', 'esp8266', 'uno', 'nano', 'raspberry', 'mcu', 'controller',
+    'pin mapping', 'pin assignment', 'pinout', 'oled', 'display', 'address', '0x', 'i2c', 'spi',
+    'api_key', 'apikey', 'api key', 'secret', 'token', 'database', 'db', 'firestore', 'mongodb', 'sql', 'postgres',
+    'architecture', 'system design', 'component', 'library', 'service', 'decided to', 'chose to', 'final design',
+    'connections', 'output mapping', 'output assignments'
+  ];
+  
+  // Priority 2 triggers (milestones, state, unresolved)
+  var priority2Keywords = [
+    'completed', 'finished', 'done', 'milestone', 'success', 'currently', 'now working', 'unresolved',
+    'error', 'bug', 'issue', 'failing', 'state', 'status'
+  ];
+  
+  // Priority 3 triggers (temporary, intermediate)
+  var priority3Keywords = [
+    'temporary', 'temp', 'for now', 'internally', 'temporarily', 'try connecting', 'testing', 'intermediate',
+    'step', 'attempt', 'maybe', 'suggest'
+  ];
+
+  var isHardware = (type === 'hardware_configuration' || /pin|connected|wire|port|bus/i.test(text));
+  var hasPin = /\bpin\b|\bconnected\b|→|=|to/i.test(text);
+  
+  if (priority1Keywords.some(function(kw) { return text.indexOf(kw) !== -1; })) {
+    return 1;
+  }
+  
+  var hardwareP1 = ['led', 'relay', 'motor', 'arduino', 'sensor', 'oled', 'display', 'screen', 'dht', 'temp', 'humidity', 'servo', 'driver'];
+  if (isHardware && hasPin) {
+    if (hardwareP1.some(function(kw) { return text.indexOf(kw) !== -1; })) {
+      return 1;
+    }
+    if (/pin\s*\d+\s*(?:→|to|=)\s*(?:pin\s*)?\d+/i.test(text) || /temporary|temp/i.test(text)) {
+      return 3;
+    }
+    return 1; 
+  }
+
+  if (priority2Keywords.some(function(kw) { return text.indexOf(kw) !== -1; })) {
+    return 2;
+  }
+
+  if (priority3Keywords.some(function(kw) { return text.indexOf(kw) !== -1; })) {
+    return 3;
+  }
+
+  if (type === 'user_decision' || type === 'system_configuration') {
+    return 1;
+  }
+  if (type === 'system_state') {
+    return 2;
+  }
+  
+  return 2;
+}
+
+function extractFactsFromText(text) {
+  var facts = [];
+  var seen = new Set();
+  FACT_PATTERNS.forEach(function(category) {
+    category.patterns.forEach(function(pattern) {
+      try {
+        var regex = new RegExp(pattern.source, pattern.flags);
+        var match;
+        while ((match = regex.exec(text)) !== null) {
+          var fact = match[0].trim().replace(/\s+/g, ' ').slice(0, 120);
+          if (fact.length < 6) continue;
+          if (seen.has(fact.toLowerCase())) continue;
+          seen.add(fact.toLowerCase());
+          var priority = calculateFactImportance(fact, category.type);
+          facts.push({
+            type: category.type,
+            fact: fact,
+            priority: priority,
+            score: priority === 1 ? 10 : (priority === 2 ? 5 : 1),
+            extractedAt: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        console.error("Synapse fact scanner: invalid regex pattern in", category.type, pattern, err);
+      }
+    });
+  });
+  return facts;
+}
+
+// ── FACT SCANNER STATE ───────────────────────────────────────────
+var factScannerState = {
+  backfillDone: false,
+  lastScannedLength: 0,
+  lastUrl: window.location.href
+};
+
+// ── CONVERSATION KEY ─────────────────────────────────────────────
+function getConvKey() {
+  var url = window.location.href.split('?')[0];
+  try {
+    return 'facts_' + btoa(url).slice(0, 40);
+  } catch(e) {
+    return 'facts_' + url.slice(-40).replace(/[^a-z0-9]/gi, '_');
+  }
+}
+
+// ── MAIN SCANNER ENTRY POINT ─────────────────────────────────────
+async function initFactScanner() {
+  if (!isChromeContextValid()) return;
+  var convKey = getConvKey();
+  safeStorageGet([convKey + '_backfilled'], function(result) {
+    if (result[convKey + '_backfilled']) {
+      console.log('Synapse: Backfill already done, starting incremental scan');
+      factScannerState.backfillDone = true;
+      startIncrementalScanner();
+    } else {
+      console.log('Synapse: Starting historical backfill scan...');
+      runHistoricalBackfill(convKey).then(function() {
+        startIncrementalScanner();
+      });
+    }
+  });
+}
+
+// ── HISTORICAL BACKFILL ──────────────────────────────────────────
+// Extracts ALL facts from entire conversation at once.
+// Only runs once per conversation URL.
+async function runHistoricalBackfill(convKey) {
+  try {
+    console.log('Synapse: Beginning full conversation scan...');
+    var allMessages = extractRecentMessages();
+    if (allMessages.length === 0) {
+      console.log('Synapse: No messages found for backfill');
+      var emptyObj = {};
+      emptyObj[convKey + '_backfilled'] = true;
+      safeStorageSet(emptyObj);
+      factScannerState.backfillDone = true;
+      return;
+    }
+    console.log('Synapse: Scanning', allMessages.length, 'messages for historical facts...');
+    var fullConversationText = allMessages.map(function(m) {
+      return (m.role || 'user') + ': ' + (m.content || m.text || '');
+    }).join('\n\n');
+
+    var allFacts = extractFactsFromText(fullConversationText);
+    console.log('Synapse: Backfill found', allFacts.length, 'historical facts');
+
+    var saveObj = {};
+    if (allFacts.length > 0) {
+      saveObj[convKey] = allFacts;
+      saveObj[convKey + '_backfillCount'] = allFacts.length;
+    }
+    saveObj[convKey + '_backfilled'] = true;
+    saveObj[convKey + '_backfillTime'] = new Date().toISOString();
+    safeStorageSet(saveObj);
+
+    factScannerState.backfillDone = true;
+    factScannerState.lastScannedLength = fullConversationText.length;
+    console.log('Synapse: Saved', allFacts.length, 'historical facts from backfill');
+  } catch(e) {
+    console.warn('Synapse: Backfill error:', e);
+    factScannerState.backfillDone = true;
+  }
+}
+
+// ── INCREMENTAL SCANNER ──────────────────────────────────────────
+// Runs every 30 seconds after backfill, only scanning NEW content.
+function startIncrementalScanner() {
+  runIncrementalScan();
+  setInterval(function() {
+    if (window.location.href !== factScannerState.lastUrl) {
+      factScannerState.lastUrl = window.location.href;
+      factScannerState.lastScannedLength = 0;
+      factScannerState.backfillDone = false;
+      console.log('Synapse: New conversation detected, re-initializing...');
+      setTimeout(initFactScanner, 2000);
+      return;
+    }
+    runIncrementalScan();
+  }, 30000);
+}
+
+async function runIncrementalScan() {
+  if (!isChromeContextValid()) return;
+  if (!factScannerState.backfillDone) return;
+  try {
+    var messages = extractRecentMessages();
+    if (messages.length === 0) return;
+    var fullText = messages.map(function(m) {
+      return (m.content || m.text || '');
+    }).join('\n');
+    if (fullText.length <= factScannerState.lastScannedLength) return;
+    var newText = fullText.slice(factScannerState.lastScannedLength);
+    factScannerState.lastScannedLength = fullText.length;
+    if (newText.trim().length < 20) return;
+    var newFacts = extractFactsFromText(newText);
+    if (newFacts.length === 0) return;
+    var convKey = getConvKey();
+    safeStorageGet([convKey], function(result) {
+      var existing = result[convKey] || [];
+      var existingTexts = new Set(
+        existing.map(function(f) { return f.fact.toLowerCase().trim(); })
+      );
+      var toAdd = newFacts.filter(function(f) {
+        return !existingTexts.has(f.fact.toLowerCase().trim());
+      });
+      if (toAdd.length === 0) return;
+      var updated = existing.concat(toAdd);
+      if (updated.length > 500) updated = updated.slice(-500);
+      var saveObj = {};
+      saveObj[convKey] = updated;
+      safeStorageSet(saveObj);
+      console.log('Synapse: Added', toAdd.length, 'new facts. Total:', updated.length);
+    });
+  } catch(e) {
+    console.warn('Synapse: Incremental scan error:', e);
+  }
+}
+
+// ── LOAD FACTS FOR CAPSULE GENERATION ───────────────────────────
+async function loadStoredFacts() {
+  var convKey = getConvKey();
+  return new Promise(function(resolve) {
+    safeStorageGet([convKey], function(result) {
+      var facts = result[convKey] || [];
+      console.log('Synapse: Loaded', facts.length, 'facts for capsule generation');
+      resolve(facts);
+    });
+  });
+}
+
+// ── START SCANNER ────────────────────────────────────────────────
+// Delay 3 seconds to let page fully load first, then run backfill.
+setTimeout(function() {
+  initFactScanner();
+}, 3000);
+
+
+// ==========================================
 // 7.5 HYBRID CAPSULE ENGINE (Groq + local fallback)
 // ==========================================
 
 // ── REPLACE THIS KEY if you hit 429 rate limit errors ──
 // Get a free key at: https://console.groq.com/keys
+
+function tryRepairJson(jsonStr) {
+  var cleaned = jsonStr.trim();
+  var stack = [];
+  var inString = false;
+  var escaped = false;
+  var lastSafeIndex = 0;
+  var lastSafeStack = [];
+
+  for (var i = 0; i < cleaned.length; i++) {
+    var char = cleaned[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      if (inString) escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (char === '{' || char === '[') {
+      stack.push(char);
+      continue;
+    }
+
+    if (char === '}') {
+      if (stack[stack.length - 1] === '{') {
+        stack.pop();
+        lastSafeIndex = i + 1;
+        lastSafeStack = [...stack];
+      }
+      continue;
+    }
+
+    if (char === ']') {
+      if (stack[stack.length - 1] === '[') {
+        stack.pop();
+        lastSafeIndex = i + 1;
+        lastSafeStack = [...stack];
+      }
+      continue;
+    }
+
+    if (char === ',') {
+      lastSafeIndex = i;
+      lastSafeStack = [...stack];
+    }
+  }
+
+  if (lastSafeIndex > 0) {
+    var subStr = cleaned.slice(0, lastSafeIndex).trim();
+    if (subStr.endsWith(',')) {
+      subStr = subStr.slice(0, -1).trim();
+    }
+    var closing = '';
+    for (var j = lastSafeStack.length - 1; j >= 0; j--) {
+      closing += (lastSafeStack[j] === '{' ? '}' : ']');
+    }
+    try {
+      return JSON.parse(subStr + closing);
+    } catch (err) {
+      console.warn("Synapse JSON repair failed at checkpoint:", err.message);
+    }
+  }
+
+  // If lastSafeIndex didn't work, let's try a simple stack-closing from the end
+  if (stack.length > 0) {
+    var closing = '';
+    for (var j = stack.length - 1; j >= 0; j--) {
+      closing += (stack[j] === '{' ? '}' : ']');
+    }
+    try {
+      return JSON.parse(cleaned + closing);
+    } catch (err) {
+      // Ignore
+    }
+  }
+  return null;
+}
+
+function extractFieldsViaRegex(rawText) {
+  var result = {
+    layer1_identity: {},
+    layer2_architecture: {},
+    layer3_state: {},
+    layer4_facts: {},
+    user_preferences: [],
+    document_summary: ''
+  };
+
+  function getStr(key) {
+    var regex = new RegExp('"' + key + '"\\s*:\\s*"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"', 'i');
+    var match = rawText.match(regex);
+    if (match) {
+      try {
+        return JSON.parse('"' + match[1] + '"');
+      } catch (e) {
+        return match[1];
+      }
+    }
+    return '';
+  }
+
+  function getArr(key) {
+    var regex = new RegExp('"' + key + '"\\s*:\\s*\\[([^\\]]*)\\]', 'i');
+    var match = rawText.match(regex);
+    if (match) {
+      var arrayContent = match[1];
+      var strRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+      var items = [];
+      var itemMatch;
+      while ((itemMatch = strRegex.exec(arrayContent)) !== null) {
+        try {
+          items.push(JSON.parse('"' + itemMatch[1] + '"'));
+        } catch (e) {
+          items.push(itemMatch[1]);
+        }
+      }
+      return items;
+    }
+    return [];
+  }
+
+  result.layer1_identity.project_name = getStr('project_name');
+  result.layer1_identity.project_purpose = getStr('project_purpose');
+  result.layer1_identity.final_objective = getStr('final_objective');
+  result.layer1_identity.project_type = getStr('project_type');
+
+  result.layer2_architecture.major_components = getArr('major_components');
+  result.layer2_architecture.system_design = getArr('system_design');
+  result.layer2_architecture.technology_stack = getArr('technology_stack');
+
+  result.layer3_state.completed = getArr('completed');
+  result.layer3_state.in_progress = getArr('in_progress');
+  result.layer3_state.current_step = getStr('current_step');
+  result.layer3_state.next_step = getStr('next_step');
+  result.layer3_state.blocked_by = getArr('blocked_by');
+
+  result.layer4_facts.hard_facts = getArr('hard_facts');
+  result.layer4_facts.user_decisions = getArr('user_decisions');
+  result.layer4_facts.current_state = getArr('current_state');
+  result.layer4_facts.code_details = getArr('code_details');
+
+  result.user_preferences = getArr('user_preferences');
+  result.document_summary = getStr('document_summary');
+
+  return result;
+}
 
 async function generateCapsuleHybrid(conversationData) {
   
@@ -1649,6 +2567,9 @@ async function generateCapsuleHybrid(conversationData) {
   var messages = conversationData.messages || [];
   var documents = conversationData.documents || [];
   var platform = conversationData.platform || window.location.hostname;
+  // Part 3: accept pre-extracted facts
+  var storedFacts = conversationData.storedFacts || [];
+  var groupedFacts = conversationData.groupedFacts || {};
 
   var recentMessages = messages.slice(-20);
 
@@ -1665,20 +2586,176 @@ async function generateCapsuleHybrid(conversationData) {
       }).join('\n')
     : 'No documents attached.';
 
-  var tinyPrompt = 'Analyze and return JSON only. No markdown. No explanation.\n\n' +
-    'Chat:\n' + shortTranscript + '\n\n' +
-    'Docs:\n' + shortDocSummary + '\n\n' +
+  // Build facts context string from pre-extracted or inspected facts
+  var factsContext = '';
+  if (conversationData.inspectedMemory) {
+    var im = conversationData.inspectedMemory;
+    factsContext = 'USER-VERIFIED PROJECT MEMORY DETAILS (Please preserve and structure these facts and details into the appropriate fields in the output JSON):\n\n';
+    
+    factsContext += 'LAYER 1 - IDENTITY:\n';
+    factsContext += '- Project Name: ' + (im.project_name || '') + '\n';
+    factsContext += '- Project Type: ' + (im.project_type || '') + '\n';
+    factsContext += '- Project Purpose: ' + (im.project_purpose || '') + '\n';
+    factsContext += '- Final Objective: ' + (im.final_objective || '') + '\n\n';
+
+    factsContext += 'LAYER 2 - ARCHITECTURE:\n';
+    factsContext += '- Major Components: ' + JSON.stringify(im.major_components) + '\n';
+    factsContext += '- System Design: ' + JSON.stringify(im.system_design) + '\n';
+    factsContext += '- Tech Stack: ' + JSON.stringify(im.technology_stack) + '\n\n';
+
+    factsContext += 'LAYER 3 - STATE:\n';
+    factsContext += '- Completed: ' + JSON.stringify(im.completed) + '\n';
+    factsContext += '- In Progress: ' + JSON.stringify(im.in_progress) + '\n';
+    factsContext += '- Current Step: ' + (im.current_step || '') + '\n';
+    factsContext += '- Next Step: ' + (im.next_step || '') + '\n';
+    factsContext += '- Blocked By: ' + JSON.stringify(im.blocked_by) + '\n\n';
+
+    factsContext += 'LAYER 4 - FACTS & DECISIONS:\n';
+    var p1Facts = im.facts.filter(f => f.priority === 1).map(f => f.fact);
+    var p2Facts = im.facts.filter(f => f.priority === 2).map(f => f.fact);
+    var p3Facts = im.facts.filter(f => f.priority === 3).map(f => f.fact);
+
+    factsContext += '- PRIORITY 1 FACTS (CRITICAL - ALWAYS PRESERVE):\n';
+    p1Facts.forEach(f => { factsContext += '  * ' + f + '\n'; });
+    factsContext += '- PRIORITY 2 FACTS (IMPORTANT):\n';
+    p2Facts.forEach(f => { factsContext += '  * ' + f + '\n'; });
+    factsContext += '- PRIORITY 3 FACTS (SECONDARY/TEMPORARY):\n';
+    p3Facts.forEach(f => { factsContext += '  * ' + f + '\n'; });
+
+    factsContext += '\n- USER DECISIONS:\n';
+    if (im.decisions) {
+      im.decisions.forEach(d => { factsContext += '  * ' + d + '\n'; });
+    }
+    factsContext += '\n';
+  } else if (storedFacts.length > 0) {
+    factsContext = 'PRE-EXTRACTED FACTS (already confirmed from conversation):\n';
+    var factTypeLabels = {
+      hardware_configuration: 'Hardware/Electronics',
+      code_detail: 'Code Details',
+      system_configuration: 'System Config',
+      user_decision: 'User Decisions',
+      system_state: 'Current State',
+      study_fact: 'Study Facts'
+    };
+    Object.keys(groupedFacts).forEach(function(type) {
+      var label = factTypeLabels[type] || type;
+      factsContext += label + ':\n';
+      groupedFacts[type].forEach(function(f) {
+        factsContext += '- ' + f + '\n';
+      });
+      factsContext += '\n';
+    });
+  }
+
+  var tinyPrompt =
+    'You are a technical project memory system.\n' +
+    'Analyze this conversation and extract layered memory.\n' +
+    'Return raw JSON only. No markdown. No explanation.\n\n' +
+
+    (factsContext ? factsContext + '\n' : '') +
+
+    'CONVERSATION:\n' + shortTranscript + '\n\n' +
+
+    (shortDocSummary !== 'No documents attached.'
+      ? 'DOCUMENTS:\n' + shortDocSummary + '\n\n'
+      : '') +
+
+    'Extract memory in 4 distinct layers:\n\n' +
+
+    'LAYER 1 — PROJECT IDENTITY (big picture, never changes):\n' +
+    'What is the overall project? What is the final goal?\n' +
+    'What problem is being solved?\n\n' +
+
+    'LAYER 2 — ARCHITECTURE (components and design):\n' +
+    'What are ALL major components, modules, technologies?\n' +
+    'What is the overall system design?\n\n' +
+
+    'LAYER 3 — PROJECT STATE (progress tracking):\n' +
+    'What has been fully completed?\n' +
+    'What is currently being worked on?\n' +
+    'What comes next?\n\n' +
+
+    'LAYER 4 — FACTS (specific technical details):\n' +
+    'Pin numbers, values, addresses, names, decisions.\n\n' +
+
     'Return this exact JSON:\n' +
     '{\n' +
-    '  "project": "specific descriptive title",\n' +
-    '  "topics": ["real subject topics only"],\n' +
-    '  "important_concepts": ["concept: what it means"],\n' +
-    '  "current_goal": "one complete sentence",\n' +
-    '  "unresolved_issues": ["real unfinished problems"],\n' +
-    '  "user_preferences": ["how user likes to learn"],\n' +
-    '  "document_summary": "one sentence about the documents"\n' +
-    '}';
 
+    '  "layer1_identity": {\n' +
+    '    "project_name": "full descriptive project name",\n' +
+    '    "project_purpose": "what this project does when complete",\n' +
+    '    "final_objective": "the end goal in one sentence",\n' +
+    '    "project_type": "hardware/software/study/research/other"\n' +
+    '  },\n' +
+
+    '  "layer2_architecture": {\n' +
+    '    "major_components": [\n' +
+    '      "every major component — chip, module, library, service"\n' +
+    '    ],\n' +
+    '    "system_design": [\n' +
+    '      "how components connect and interact"\n' +
+    '    ],\n' +
+    '    "technology_stack": [\n' +
+    '      "languages, frameworks, hardware platforms"\n' +
+    '    ]\n' +
+    '  },\n' +
+
+    '  "layer3_state": {\n' +
+    '    "completed": [\n' +
+    '      "things fully finished and working"\n' +
+    '    ],\n' +
+    '    "in_progress": [\n' +
+    '      "things currently being worked on"\n' +
+    '    ],\n' +
+    '    "current_step": "the single specific action happening right now",\n' +
+    '    "next_step": "what comes immediately after current step",\n' +
+    '    "blocked_by": [\n' +
+    '      "anything preventing progress"\n' +
+    '    ]\n' +
+    '  },\n' +
+
+    '  "layer4_facts": {\n' +
+    '    "hard_facts": [\n' +
+    '      "specific facts: pin numbers, values, addresses"\n' +
+    '    ],\n' +
+    '    "user_decisions": [\n' +
+    '      "every decision made during the project"\n' +
+    '    ],\n' +
+    '    "current_state": [\n' +
+    '      "what is working, broken, pending"\n' +
+    '    ],\n' +
+    '    "code_details": [\n' +
+    '      "variable names, constants, functions, configs"\n' +
+    '    ]\n' +
+    '  },\n' +
+
+    '  "user_preferences": ["how user likes to work"],\n' +
+    '  "document_summary": "one sentence about documents if any"\n' +
+    '}\n\n' +
+
+    'CRITICAL RULES:\n' +
+    '- ALWAYS preserve all user-verified Priority 1 facts (such as LED/relay/motor/Arduino/sensor pin assignments, OLED addresses, API keys, database names, and final architecture decisions) in layer4.hard_facts.\n' +
+    '- Do not omit or summarize away Priority 1 facts.\n' +
+    '- If facts or fields were verified by the user in the metadata details above, output them EXACTLY as provided.\n' +
+    '- layer1 must reflect the ENTIRE project not just recent messages\n' +
+    '- final_objective is the BIG GOAL not the current step\n' +
+    '- current_step is only the immediate action right now\n' +
+    '- layer2 must list ALL components mentioned in entire conversation\n' +
+    '- layer3.completed must include everything done from start\n' +
+    '- layer4 must include ALL facts from entire conversation\n' +
+    '- NEVER confuse current_step with final_objective\n' +
+    '- BAD final_objective: "connect FULL probe to pin 5/6"\n' +
+    '- GOOD final_objective: "build automatic water tank controller"\n' +
+    '- Include ALL pre-extracted facts in layer4.hard_facts';
+
+
+  // STEP 4: Log prompt being sent to Groq
+  console.log('=== SYNAPSE DEBUG: PROMPT SENT TO GROQ ===');
+  console.log(tinyPrompt);
+  console.log('=== END PROMPT ===');
+  console.log('Prompt length:', tinyPrompt.length, 'characters');
+  console.log('Messages in transcript:', recentMessages.length);
+  console.log('Stored facts count:', storedFacts.length);
 
   var response;
   try {
@@ -1703,7 +2780,7 @@ async function generateCapsuleHybrid(conversationData) {
             }
           ],
           temperature: 0,
-          max_tokens: 1000
+          max_tokens: 3000
         })
       }
     );
@@ -1728,64 +2805,241 @@ async function generateCapsuleHybrid(conversationData) {
   }
 
   var rawText = data.choices[0].message.content.trim();
+
+  // Tasks 1 & 2: Log raw Groq response length & raw response
+  console.log('=== SYNAPSE DEBUG: GROQ RESPONSE METADATA ===');
+  console.log('Raw Groq response length:', rawText.length, 'characters');
+  console.log('Finish reason:', data.choices[0].finish_reason);
+  if (data.usage) {
+    console.log('Usage details:', JSON.stringify(data.usage));
+  }
+  console.log('=== END METADATA ===');
+
+  console.log('=== SYNAPSE DEBUG: RAW GROQ RESPONSE ===');
+  console.log(rawText);
+  console.log('=== END RAW RESPONSE ===');
+
+  // Task 4: Verify whether response truncation is occurring
+  var finishReason = data.choices[0].finish_reason;
+  var isTruncated = (finishReason === 'length');
+
+  // Task 5: Verify whether JSON is being cut off before parse
   var cleaned = rawText
     .replace(/^```json\n?/, '')
     .replace(/^```\n?/, '')
     .replace(/\n?```$/, '')
     .trim();
 
+  var isJsonCutOff = !cleaned.endsWith('}');
+
+  if (isTruncated) {
+    console.error('SYNAPSE WARNING: Groq response was truncated because it exceeded maximum token limit.');
+  } else if (isJsonCutOff) {
+    console.warn('SYNAPSE WARNING: JSON response was cut off before closing brace.');
+  }
+
+  // Task 6: Fallback handling if response exceeds expected size or is truncated
   var aiCapsule;
+  var parseMethod = 'standard';
   try {
     aiCapsule = JSON.parse(cleaned);
   } catch (e) {
-    throw new Error('Invalid JSON from Groq: ' + cleaned.slice(0, 100));
+    console.warn('Synapse: Standard JSON parse failed. Attempting JSON repair fallback...');
+    aiCapsule = tryRepairJson(cleaned);
+    if (aiCapsule) {
+      parseMethod = 'repaired';
+    } else {
+      console.warn('Synapse: JSON repair failed. Falling back to regex-based field extraction...');
+      aiCapsule = extractFieldsViaRegex(cleaned);
+      parseMethod = 'regex';
+    }
   }
 
-  // Build final capsule
+  // Task 3: Log parsed JSON object
+  console.log('=== SYNAPSE DEBUG: PARSED AI CAPSULE ===');
+  console.log('Parse Method Used:', parseMethod);
+  console.log(JSON.stringify(aiCapsule, null, 2));
+  console.log('=== END PARSED CAPSULE ===');
+  console.log('Layer 1:', JSON.stringify(aiCapsule.layer1_identity));
+  console.log('Layer 2:', JSON.stringify(aiCapsule.layer2_architecture));
+  console.log('Layer 3:', JSON.stringify(aiCapsule.layer3_state));
+  console.log('Layer 4:', JSON.stringify(aiCapsule.layer4_facts));
+
+  // Check for missing layers (only error if we are on standard/repaired and they are missing)
+  if (!aiCapsule.layer1_identity) {
+    console.error('SYNAPSE ERROR: layer1_identity missing from response');
+  }
+  if (!aiCapsule.layer3_state) {
+    console.error('SYNAPSE ERROR: layer3_state missing from response');
+  }
+
+  // Build final layered capsule
+  var ai = aiCapsule;
+  var l1 = ai.layer1_identity || {};
+  var l2 = ai.layer2_architecture || {};
+  var l3 = ai.layer3_state || {};
+  var l4 = ai.layer4_facts || {};
+
   return {
-    capsule_version: '2.2-hybrid',
+    capsule_version: '4.0-layered',
     source_platform: platform,
-    project: aiCapsule.project || 'Unknown Project',
-    topics: aiCapsule.topics || [],
-    important_concepts: aiCapsule.important_concepts || [],
-    current_goal: aiCapsule.current_goal || '',
-    unresolved_issues: aiCapsule.unresolved_issues || [],
-    user_preferences: aiCapsule.user_preferences || [],
+
+    // Layer 1 — Identity
+    project: l1.project_name || ai.project || 'Unknown Project',
+    project_purpose: l1.project_purpose || '',
+    final_objective: l1.final_objective || '',
+    project_type: l1.project_type || ai.project_type || 'other',
+
+    // Layer 2 — Architecture
+    major_components: l2.major_components || [],
+    system_design: l2.system_design || [],
+    technology_stack: l2.technology_stack || [],
+
+    // Layer 3 — State
+    completed: l3.completed || [],
+    in_progress: l3.in_progress || [],
+    current_step: l3.current_step || '',
+    next_step: l3.next_step || '',
+    blocked_by: l3.blocked_by || [],
+
+    // Layer 4 — Facts
+    hard_facts: l4.hard_facts || [],
+    user_decisions: l4.user_decisions || [],
+    current_state: l4.current_state || [],
+    code_details: l4.code_details || [],
+
+    // Supporting fields
+    user_preferences: ai.user_preferences || [],
+    stored_facts: storedFacts,
+    grouped_facts: groupedFacts,
+
     recent_context: messages.slice(-30).map(function(m) {
       return {
         role: m.role,
         content: (m.content || m.text || '').slice(0, 600)
       };
     }),
+
     document_context: {
       documents_present: documents.length > 0,
-      document_summary: aiCapsule.document_summary || '',
+      document_summary: ai.document_summary || '',
       documents: documents.map(function(d) {
         return {
           title: d.title || 'Untitled',
           type: d.type || 'unknown',
-          key_content: (d.compressedText || '').slice(0, 1500)
+          key_content: (d.compressedText || '').slice(0, 2000)
         };
       })
     },
-    handoff: 'This capsule contains a semantic summary of the ' +
-      'COMPLETE conversation from the beginning. ' +
-      'The project, topics, concepts and goal fields reflect ' +
-      'the entire chat history. ' +
-      'The recent_context shows the last exchanges. ' +
-      'User is working on: ' + (aiCapsule.project || 'unknown') + '. ' +
-      'Their goal: ' + (aiCapsule.current_goal || 'unknown') + '. ' +
-      (documents.length > 0 
-        ? documents.length + ' document(s) content is in document_context. '
-        : 'No documents. ') +
-      'When user sends first message, continue naturally ' +
-      'as if you were in the original conversation.'
+
+    // Handoff clearly separates project goal from current step
+    handoff:
+      'PROJECT: ' + (l1.project_name || 'Unknown') + '. ' +
+      'GOAL: ' + (l1.final_objective || 'Unknown') + '. ' +
+      'CURRENT STEP: ' + (l3.current_step || 'Unknown') + '. ' +
+      'NEXT: ' + (l3.next_step || 'Unknown') + '. ' +
+      (documents.length > 0
+        ? documents.length + ' documents in memory. '
+        : '') +
+      'Continue from current step toward final objective.'
   };
 }
 
-// ── SILENT FILE INTERCEPTOR ──────────────────────────────────────
-// Fires when user uploads ANY file to ChatGPT, Gemini, or Claude
-// User sees nothing — happens completely in background
+function saveCapsuleToFirestore(capsule) {
+  if (isChromeContextValid()) {
+    chrome.runtime.sendMessage({ action: 'saveCapsule', capsule: capsule });
+    console.log('Synapse: Firestore save message sent for', capsule.id);
+  }
+}
+
+async function extractAndStorePDF(file) {
+  try {
+    var rawText = await extractPDFTextLocally(file);
+    if (!rawText || rawText.length < 50) return null;
+
+    // Compress to key concepts only
+    var compressed = compressTextLocally(rawText, 4000);
+
+    let summary = "";
+    let concepts = [];
+    if (isChromeContextValid()) {
+      try {
+        const response = await new Promise(resolve => {
+          chrome.runtime.sendMessage({
+            action: 'processPDF',
+            filename: file.name,
+            text: rawText
+          }, resolve);
+        });
+        if (response && response.success && response.doc) {
+          summary = response.doc.summary;
+          concepts = response.doc.concepts;
+        }
+      } catch (err) {
+        console.warn('Failed to summarize PDF in background:', err);
+      }
+    }
+
+    var docMemory = {
+      title: file.name,
+      type: 'pdf',
+      rawLength: rawText.length,
+      compressedText: compressed,
+      charCount: rawText.length,
+      extractedAt: new Date().toISOString(),
+      source: 'intercepted',
+      summary: summary,
+      concepts: concepts
+    };
+
+    // Save to Firestore for permanent memory (flat capsule format)
+    saveCapsuleToFirestore({ 
+      id: 'doc_' + Date.now(),
+      project: file.name,
+      topics: [],
+      document_context: {
+        documents_present: true,
+        documents: [docMemory]
+      }
+    });
+
+    return docMemory;
+
+  } catch(e) {
+    console.warn('PDF extraction failed:', e);
+    return null;
+  }
+}
+
+async function handleImageMemory(file) {
+  var imageMemory = {
+    title: file.name,
+    type: file.type,
+    size: file.size,
+    capturedAt: new Date().toISOString(),
+    description: 'Image: ' + file.name + 
+      ' (' + Math.round(file.size/1024) + 'KB, ' + 
+      file.type + ')',
+    note: 'Visual content — ask user to re-share if needed'
+  };
+
+  // Store in intercepted docs
+  safeStorageGet(['synapse_intercepted'], function(result) {
+    var intercepted = result.synapse_intercepted || {};
+    var key = window.location.href;
+    if (!intercepted[key]) intercepted[key] = [];
+    intercepted[key].push({
+      title: file.name,
+      type: file.type,
+      compressedText: imageMemory.description,
+      charCount: imageMemory.description.length,
+      isImage: true,
+      capturedAt: imageMemory.capturedAt,
+      source: 'intercepted'
+    });
+    safeStorageSet({ synapse_intercepted: intercepted });
+  });
+}
 
 async function handleInterceptedFile(file) {
   try {
@@ -1794,7 +3048,10 @@ async function handleInterceptedFile(file) {
     let extractedText = '';
     
     if (file.name.endsWith('.pdf') || file.type === 'application/pdf') {
-      extractedText = await extractPDFTextLocally(file);
+      const docMemory = await extractAndStorePDF(file);
+      if (docMemory) {
+        extractedText = docMemory.compressedText;
+      }
     } else if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
       extractedText = await extractDOCXTextLocally(file);
     } else if (file.name.endsWith('.pptx') || file.name.endsWith('.ppt')) {
@@ -1802,7 +3059,8 @@ async function handleInterceptedFile(file) {
     } else if (file.name.endsWith('.txt')) {
       extractedText = await file.text();
     } else if (file.type.startsWith('image/')) {
-      extractedText = '[Image: ' + file.name + ' — visual content cannot be extracted]';
+      await handleImageMemory(file);
+      return;
     }
 
     if (!extractedText || extractedText.trim().length < 10) {
@@ -1902,6 +3160,480 @@ async function extractPPTXText(file) {
   }
 }
 
+function escapeHtml(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function extractHeuristicMetadata(messages, storedFacts) {
+  var allText = messages.map(m => m.content || '').join(' ');
+  var projectName = generateSmartTitle(messages);
+  
+  var projectType = 'software';
+  if (/pin|circuit|led|relay|arduino|esp32|motor|wiring|sensor|volt|resistor|breadboard|cd4011|ic\b|probe/i.test(allText)) {
+    projectType = 'hardware';
+  } else if (/paper|study|read|learn|concept|exam/i.test(allText)) {
+    projectType = 'study';
+  } else if (/research|paper|scientific/i.test(allText)) {
+    projectType = 'research';
+  }
+  
+  var projectPurpose = '';
+  var finalObjective = '';
+
+  var designMatch = allText.match(/(?:designing|building|creating|making|developing|implementing|working on)\s+(?:a|an)?\s*([^\n\.]{10,100})/i);
+  if (designMatch && !hasForbiddenText(designMatch[1])) {
+    var cand = 'Design and build ' + designMatch[1].trim();
+    if (validateProjectPurpose(cand)) {
+      projectPurpose = cand;
+    }
+  }
+
+  if (!projectPurpose) {
+    var wantMatch = allText.match(/(?:want to|need to|trying to|aiming to|plan to)\s+([^\n\.]{10,100})/i);
+    if (wantMatch && !hasForbiddenText(wantMatch[1])) {
+      var cand = wantMatch[1].trim();
+      cand = cand.charAt(0).toUpperCase() + cand.slice(1);
+      if (validateProjectPurpose(cand)) {
+        projectPurpose = cand;
+      }
+    }
+  }
+
+  if (!projectPurpose) {
+    if (projectName && validateProjectName(projectName)) {
+      projectPurpose = 'Develop the ' + projectName + '.';
+    } else {
+      projectPurpose = 'Develop a ' + projectType + ' project based on the conversation context.';
+    }
+  }
+
+  var goalMatch = allText.match(/(?:final goal|objective|end goal|target is|complete system is|complete design is)\s*(?:is|=)?\s*([^\n\.]{15,120})/i);
+  if (goalMatch && !hasForbiddenText(goalMatch[1])) {
+    var cand = goalMatch[1].trim();
+    if (validateProjectPurpose(cand)) {
+      finalObjective = cand;
+    }
+  }
+
+  if (!finalObjective) {
+    if (projectName && validateProjectName(projectName)) {
+      finalObjective = 'A fully functional ' + projectName + ' meeting all requirements.';
+    } else {
+      finalObjective = projectPurpose;
+    }
+  }
+  
+  var majorComponents = [];
+  var techStack = [];
+  var systemDesign = [];
+  
+  var techKeywords = ['javascript', 'python', 'c++', 'arduino', 'esp32', 'react', 'next.js', 'html', 'css', 'fastapi', 'flask', 'sqlite', 'mongodb', 'firebase', 'rust'];
+  techKeywords.forEach(function(kw) {
+    try {
+      var escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var prefix = /^\w/.test(kw) ? '\\b' : '(?:^|\\s|[.,;:!])';
+      var suffix = /\w$/.test(kw) ? '\\b' : '(?:$|\\s|[.,;:!])';
+      var regex = new RegExp(prefix + escaped + suffix, 'i');
+      if (regex.test(allText)) {
+        techStack.push(kw.charAt(0).toUpperCase() + kw.slice(1));
+      }
+    } catch(e) {
+      console.warn("Synapse: Error building regex for keyword: " + kw, e);
+    }
+  });
+  if (techStack.length === 0) techStack.push('Vanilla JS');
+  
+  var componentsKeywords = ['led', 'relay', 'motor', 'oled', 'lcd', 'sensor', 'dht22', 'servo', 'pump', 'button', 'switch'];
+  componentsKeywords.forEach(function(kw) {
+    var regex = new RegExp('\\b' + kw + 's?\\b', 'i');
+    if (regex.test(allText)) {
+      majorComponents.push(kw.toUpperCase());
+    }
+  });
+  if (majorComponents.length === 0) majorComponents.push('General Controller');
+  
+  systemDesign.push('Components connected directly to controller board.');
+
+  var completed = [];
+  var inProgress = [];
+  var currentStep = extractCurrentGoal(messages);
+  var nextStep = 'Next logical development iteration.';
+  var blockedBy = [];
+  
+  var unresolved = extractUnresolvedIssues(messages);
+  if (unresolved.length > 0) {
+    blockedBy = unresolved;
+  }
+  
+  var stateMatch = allText.match(/(?:completed|finished|done with)\s+([^.\n]{5,50})/gi);
+  if (stateMatch) {
+    stateMatch.forEach(function(m) {
+      completed.push(m.replace(/completed|finished|done with/i, '').trim());
+    });
+  }
+  if (completed.length === 0) completed.push('Setup initial workspace');
+  
+  var workingMatch = allText.match(/(?:working on|writing|debugging|fixing)\s+([^.\n]{5,50})/gi);
+  if (workingMatch) {
+    workingMatch.forEach(function(m) {
+      inProgress.push(m.trim());
+    });
+  }
+  if (inProgress.length === 0) inProgress.push(currentStep);
+
+  return {
+    project_name: projectName,
+    project_type: projectType,
+    project_purpose: projectPurpose,
+    final_objective: finalObjective,
+    major_components: majorComponents,
+    system_design: systemDesign,
+    technology_stack: techStack,
+    completed: completed,
+    in_progress: inProgress,
+    current_step: currentStep,
+    next_step: nextStep,
+    blocked_by: blockedBy
+  };
+}
+
+function showMemoryInspector(initialData, onConfirm) {
+  var backdrop = document.getElementById("synapse-inspector-backdrop");
+  if (!backdrop) {
+    backdrop = document.createElement("div");
+    backdrop.id = "synapse-inspector-backdrop";
+    backdrop.className = "synapse-inspector-backdrop";
+    document.body.appendChild(backdrop);
+  }
+  
+  var h = initialData.heuristic;
+  var facts = initialData.storedFacts.map(function(f) {
+    var p = f.priority || calculateFactImportance(f.fact, f.type);
+    return {
+      fact: f.fact,
+      type: f.type,
+      priority: p
+    };
+  });
+  
+  var decisions = facts.filter(f => f.type === 'user_decision').map(f => f.fact);
+  facts = facts.filter(f => f.type !== 'user_decision');
+  
+  backdrop.innerHTML = `
+    <div class="synapse-inspector-modal">
+      <div class="synapse-inspector-header">
+        <div>
+          <div class="synapse-inspector-title">Synapse Memory Inspector</div>
+          <div class="synapse-inspector-subtitle">Verify and edit extracted memory before generating the capsule</div>
+        </div>
+        <button class="inspector-btn-cancel" id="inspector-close-btn" style="padding: 4px 8px; font-size: 14px;">✕</button>
+      </div>
+      
+      <div class="synapse-inspector-body">
+        <div class="synapse-inspector-sidebar">
+          <button class="synapse-inspector-tab-btn active" data-tab="identity">
+            <span>Identity</span>
+          </button>
+          <button class="synapse-inspector-tab-btn" data-tab="architecture">
+            <span>Architecture</span>
+          </button>
+          <button class="synapse-inspector-tab-btn" data-tab="state">
+            <span>State</span>
+          </button>
+          <button class="synapse-inspector-tab-btn" data-tab="facts">
+            <span>Facts</span>
+            <span class="inspector-badge-count" id="badge-facts-count">${facts.length}</span>
+          </button>
+          <button class="synapse-inspector-tab-btn" data-tab="decisions">
+            <span>Decisions</span>
+            <span class="inspector-badge-count" id="badge-decisions-count">${decisions.length}</span>
+          </button>
+          <button class="synapse-inspector-tab-btn" data-tab="documents">
+            <span>Documents</span>
+            <span class="inspector-badge-count" id="badge-documents-count">${initialData.documents ? initialData.documents.length : 0}</span>
+          </button>
+        </div>
+        
+        <div class="synapse-inspector-content active" id="tab-identity">
+          <div class="inspector-form-group">
+            <label class="inspector-label">Project Name</label>
+            <input type="text" id="ins-project-name" class="inspector-input" value="${escapeHtml(h.project_name)}">
+          </div>
+          <div class="inspector-form-group">
+            <label class="inspector-label">Project Type</label>
+            <select id="ins-project-type" class="inspector-select">
+              <option value="software" ${h.project_type === 'software' ? 'selected' : ''}>Software</option>
+              <option value="hardware" ${h.project_type === 'hardware' ? 'selected' : ''}>Hardware</option>
+              <option value="study" ${h.project_type === 'study' ? 'selected' : ''}>Study</option>
+              <option value="research" ${h.project_type === 'research' ? 'selected' : ''}>Research</option>
+              <option value="other" ${h.project_type === 'other' ? 'selected' : ''}>Other</option>
+            </select>
+          </div>
+          <div class="inspector-form-group">
+            <label class="inspector-label">Project Purpose</label>
+            <textarea id="ins-project-purpose" class="inspector-textarea" rows="4">${escapeHtml(h.project_purpose)}</textarea>
+          </div>
+          <div class="inspector-form-group">
+            <label class="inspector-label">Final Objective</label>
+            <textarea id="ins-final-objective" class="inspector-textarea" rows="3">${escapeHtml(h.final_objective)}</textarea>
+          </div>
+        </div>
+        
+        <div class="synapse-inspector-content" id="tab-architecture">
+          <div class="inspector-form-group">
+            <label class="inspector-label">Major Components (comma-separated)</label>
+            <textarea id="ins-major-components" class="inspector-textarea" rows="3">${escapeHtml(h.major_components.join(', '))}</textarea>
+          </div>
+          <div class="inspector-form-group">
+            <label class="inspector-label">System Design (comma-separated)</label>
+            <textarea id="ins-system-design" class="inspector-textarea" rows="3">${escapeHtml(h.system_design.join(', '))}</textarea>
+          </div>
+          <div class="inspector-form-group">
+            <label class="inspector-label">Technology Stack (comma-separated)</label>
+            <textarea id="ins-tech-stack" class="inspector-textarea" rows="3">${escapeHtml(h.technology_stack.join(', '))}</textarea>
+          </div>
+        </div>
+        
+        <div class="synapse-inspector-content" id="tab-state">
+          <div class="inspector-form-group">
+            <label class="inspector-label">Completed Tasks (comma-separated)</label>
+            <textarea id="ins-completed" class="inspector-textarea" rows="2">${escapeHtml(h.completed.join(', '))}</textarea>
+          </div>
+          <div class="inspector-form-group">
+            <label class="inspector-label">In Progress (comma-separated)</label>
+            <textarea id="ins-in-progress" class="inspector-textarea" rows="2">${escapeHtml(h.in_progress.join(', '))}</textarea>
+          </div>
+          <div class="inspector-form-group">
+            <label class="inspector-label">Current Step</label>
+            <input type="text" id="ins-current-step" class="inspector-input" value="${escapeHtml(h.current_step)}">
+          </div>
+          <div class="inspector-form-group">
+            <label class="inspector-label">Next Step</label>
+            <input type="text" id="ins-next-step" class="inspector-input" value="${escapeHtml(h.next_step)}">
+          </div>
+          <div class="inspector-form-group">
+            <label class="inspector-label">Blocked By (comma-separated)</label>
+            <input type="text" id="ins-blocked-by" class="inspector-input" value="${escapeHtml(h.blocked_by.join(', '))}">
+          </div>
+        </div>
+        
+        <div class="synapse-inspector-content" id="tab-facts">
+          <div style="font-size: 11px; color: #9ca3af; margin-bottom: 8px;">
+            Critical facts like <b>LED</b>, <b>relay</b>, <b>motor</b>, <b>Arduino pin assignments</b>, and <b>OLED addresses</b> are automatically scored as Priority 1 (green).
+          </div>
+          <div class="inspector-items-container" id="facts-list-container">
+            <!-- Render facts dynamically -->
+          </div>
+          <button class="inspector-btn-add" id="inspector-add-fact-btn">+ Add Fact</button>
+        </div>
+        
+        <div class="synapse-inspector-content" id="tab-decisions">
+          <div style="font-size: 11px; color: #9ca3af; margin-bottom: 8px;">
+            Decisions made during development (e.g. choice of components or library configurations).
+          </div>
+          <div class="inspector-items-container" id="decisions-list-container">
+            <!-- Render decisions dynamically -->
+          </div>
+          <button class="inspector-btn-add" id="inspector-add-decision-btn">+ Add Decision</button>
+        </div>
+
+        <div class="synapse-inspector-content" id="tab-documents">
+          <div style="font-size: 11px; color: #9ca3af; margin-bottom: 12px;">
+            Attached/intercepted documents and extracted key concepts.
+          </div>
+          <div class="inspector-items-container" id="documents-list-container" style="display:flex; flex-direction:column; gap:16px; overflow-y:auto; max-height:280px;">
+            ${(initialData.documents || []).map(function(d) {
+              const fileConcepts = d.concepts || [];
+              return `
+                <div class="inspector-document-item" style="font-family: 'Outfit', sans-serif; margin-bottom: 16px; color: #f3f4f6;">
+                  <div style="font-weight: 600; font-size: 13px; color: #9ca3af; margin-bottom: 2px;">Document:</div>
+                  <div style="font-weight: 700; font-size: 14px; color: #ffffff; margin-bottom: 8px;">${escapeHtml(d.title)}</div>
+                  
+                  <div style="font-weight: 600; font-size: 13px; color: #9ca3af; margin-bottom: 2px;">Concepts:</div>
+                  <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: #e5e7eb; list-style-type: disc; line-height: 1.5;">
+                    ${fileConcepts.length > 0 
+                      ? fileConcepts.map(c => `<li style="margin-bottom: 2px;">${escapeHtml(c)}</li>`).join('')
+                      : '<li>No concepts extracted yet.</li>'}
+                  </ul>
+                </div>
+              `;
+            }).join('') || '<div style="font-size:12px; color:#6b7280;">No documents attached to this conversation.</div>'}
+          </div>
+        </div>
+      </div>
+      
+      <div class="synapse-inspector-footer">
+        <button class="inspector-btn-cancel" id="inspector-cancel-btn">Cancel</button>
+        <button class="inspector-btn-confirm" id="inspector-generate-btn">Confirm & Generate Capsule</button>
+      </div>
+    </div>
+  `;
+  
+  backdrop.classList.add("show");
+  
+  var tabButtons = backdrop.querySelectorAll(".synapse-inspector-tab-btn");
+  var contents = backdrop.querySelectorAll(".synapse-inspector-content");
+  tabButtons.forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      tabButtons.forEach(b => b.classList.remove("active"));
+      contents.forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      var tabId = btn.getAttribute("data-tab");
+      backdrop.querySelector("#tab-" + tabId).classList.add("active");
+    });
+  });
+  
+  function closeInspector() {
+    backdrop.classList.remove("show");
+    window.synapseIsGenerating = false;
+    const btn = document.getElementById("synapse-input-btn");
+    if (btn) btn.classList.remove('animating');
+  }
+  backdrop.querySelector("#inspector-close-btn").addEventListener("click", closeInspector);
+  backdrop.querySelector("#inspector-cancel-btn").addEventListener("click", closeInspector);
+  
+  function renderFactsList() {
+    var container = backdrop.querySelector("#facts-list-container");
+    container.innerHTML = "";
+    
+    // Sort facts: Priority 1 first, then 2, then 3
+    facts.sort(function(a, b) {
+      return a.priority - b.priority;
+    });
+    
+    backdrop.querySelector("#badge-facts-count").textContent = facts.length;
+    
+    if (facts.length === 0) {
+      container.innerHTML = `<div style="font-size: 12px; color: #6b7280; padding: 20px; text-align: center;">No facts detected. Click "+ Add Fact" to insert one.</div>`;
+      return;
+    }
+    
+    facts.forEach(function(f, idx) {
+      var row = document.createElement("div");
+      row.className = "inspector-fact-row p" + f.priority;
+      row.innerHTML = `
+        <input type="text" class="inspector-input ins-fact-input" value="${escapeHtml(f.fact)}" style="flex: 1;">
+        <select class="inspector-fact-priority ins-fact-priority">
+          <option value="1" ${f.priority === 1 ? 'selected' : ''}>P1 - Critical</option>
+          <option value="2" ${f.priority === 2 ? 'selected' : ''}>P2 - Important</option>
+          <option value="3" ${f.priority === 3 ? 'selected' : ''}>P3 - Low/Temp</option>
+        </select>
+        <button class="inspector-btn-delete ins-fact-delete">✕</button>
+      `;
+      
+      row.querySelector(".ins-fact-input").addEventListener("change", function(e) {
+        facts[idx].fact = e.target.value.trim();
+        var newP = calculateFactImportance(facts[idx].fact, facts[idx].type);
+        facts[idx].priority = newP;
+        renderFactsList();
+      });
+      
+      row.querySelector(".ins-fact-priority").addEventListener("change", function(e) {
+        facts[idx].priority = parseInt(e.target.value);
+        renderFactsList();
+      });
+      
+      row.querySelector(".ins-fact-delete").addEventListener("click", function() {
+        facts.splice(idx, 1);
+        renderFactsList();
+      });
+      
+      container.appendChild(row);
+    });
+  }
+  
+  function renderDecisionsList() {
+    var container = backdrop.querySelector("#decisions-list-container");
+    container.innerHTML = "";
+    backdrop.querySelector("#badge-decisions-count").textContent = decisions.length;
+    
+    if (decisions.length === 0) {
+      container.innerHTML = `<div style="font-size: 12px; color: #6b7280; padding: 20px; text-align: center;">No decisions detected. Click "+ Add Decision" to insert one.</div>`;
+      return;
+    }
+    
+    decisions.forEach(function(d, idx) {
+      var row = document.createElement("div");
+      row.className = "inspector-decision-row";
+      row.innerHTML = `
+        <input type="text" class="inspector-input ins-decision-input" value="${escapeHtml(d)}" style="flex: 1;">
+        <button class="inspector-btn-delete ins-decision-delete">✕</button>
+      `;
+      
+      row.querySelector(".ins-decision-input").addEventListener("change", function(e) {
+        decisions[idx] = e.target.value.trim();
+      });
+      
+      row.querySelector(".ins-decision-delete").addEventListener("click", function() {
+        decisions.splice(idx, 1);
+        renderDecisionsList();
+      });
+      
+      container.appendChild(row);
+    });
+  }
+  
+  backdrop.querySelector("#inspector-add-fact-btn").addEventListener("click", function() {
+    facts.push({
+      fact: "New pin connection or mapping fact",
+      type: "hardware_configuration",
+      priority: 1
+    });
+    renderFactsList();
+  });
+  
+  backdrop.querySelector("#inspector-add-decision-btn").addEventListener("click", function() {
+    decisions.push("New decision (e.g. decided to use I2C display)");
+    renderDecisionsList();
+  });
+  
+  renderFactsList();
+  renderDecisionsList();
+  
+  backdrop.querySelector("#inspector-generate-btn").addEventListener("click", function() {
+    var insName = backdrop.querySelector("#ins-project-name").value.trim();
+    var insType = backdrop.querySelector("#ins-project-type").value;
+    var insPurpose = backdrop.querySelector("#ins-project-purpose").value.trim();
+    var insFinalObj = backdrop.querySelector("#ins-final-objective").value.trim();
+    
+    var insComponents = backdrop.querySelector("#ins-major-components").value.split(',').map(s => s.trim()).filter(Boolean);
+    var insDesign = backdrop.querySelector("#ins-system-design").value.split(',').map(s => s.trim()).filter(Boolean);
+    var insTech = backdrop.querySelector("#ins-tech-stack").value.split(',').map(s => s.trim()).filter(Boolean);
+    
+    var insCompleted = backdrop.querySelector("#ins-completed").value.split(',').map(s => s.trim()).filter(Boolean);
+    var insInProgress = backdrop.querySelector("#ins-in-progress").value.split(',').map(s => s.trim()).filter(Boolean);
+    var insCurrentStep = backdrop.querySelector("#ins-current-step").value.trim();
+    var insNextStep = backdrop.querySelector("#ins-next-step").value.trim();
+    var insBlockedBy = backdrop.querySelector("#ins-blocked-by").value.split(',').map(s => s.trim()).filter(Boolean);
+    
+    var editedMemory = {
+      project_name: insName,
+      project_type: insType,
+      project_purpose: insPurpose,
+      final_objective: insFinalObj,
+      major_components: insComponents,
+      system_design: insDesign,
+      technology_stack: insTech,
+      completed: insCompleted,
+      in_progress: insInProgress,
+      current_step: insCurrentStep,
+      next_step: insNextStep,
+      blocked_by: insBlockedBy,
+      facts: facts,
+      decisions: decisions
+    };
+    
+    backdrop.classList.remove("show");
+    onConfirm(editedMemory);
+  });
+}
+
 async function generateCapsule() {
     // Guard: block parallel calls
     if (window.synapseIsGenerating) {
@@ -1961,84 +3693,299 @@ async function generateCapsule() {
     const loadingInterval = showLoadingAnimation('synapse-loading-text');
 
     try {
-        const conversation = extractRecentMessages();
-        if (conversation.length === 0) {
-            throw new Error("No messages detected in this conversation.");
+        if (loadingTextSpan) {
+            loadingTextSpan.textContent = "Loading memory from Firestore...";
         }
 
-        // Get current conversation URL
-        const currentConversationKey = window.location.href;
+        if (loadingTextSpan) {
+            loadingTextSpan.textContent = "Extracting conversation context...";
+        }
 
-        // Load only docs from THIS conversation
+        // 1. Extract the current conversation on the page
+        const conversation = extractRecentMessages();
+        const messages = conversation.map(c => ({ role: c.role, content: c.text || c.content || '' }));
+        
+        // 2. Extract facts from the conversation (both stored and freshly scanned)
+        const storedConversationFacts = await loadStoredFacts();
+        const fullConversationText = conversation.map(function(m) {
+          return (m.role || 'user') + ': ' + (m.content || m.text || '');
+        }).join('\n\n');
+        const freshConversationFacts = extractFactsFromText(fullConversationText);
+        
+        const conversationFacts = [...storedConversationFacts];
+        freshConversationFacts.forEach(f => {
+            if (!conversationFacts.some(existing => existing.fact.toLowerCase().trim() === f.fact.toLowerCase().trim())) {
+                conversationFacts.push(f);
+            }
+        });
+        
+        // 3. Extract heuristic metadata from the page
+        const pageHeuristic = extractHeuristicMetadata(messages, conversationFacts);
+
+        if (loadingTextSpan) {
+            loadingTextSpan.textContent = "Loading memory from Firestore...";
+        }
+        
+        // 4. Fetch the project memory from Firestore (using the heuristically-extracted project name)
+        const projectMemory = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ 
+                action: "loadProjectMemory", 
+                projectName: pageHeuristic.project_name 
+            }, (response) => {
+                if (response && response.success) {
+                    resolve(response);
+                } else {
+                    reject(new Error(response ? response.error : "Failed to load project memory from Firestore"));
+                }
+            });
+        });
+
+        // 5. Merge Firestore memory with locally-extracted page details
+        const projectDoc = projectMemory.project || {};
+        const stateDoc = projectMemory.state || {};
+        
+        const pageProjectName = pageHeuristic.project_name;
+        const isNameValid = validateProjectName(pageProjectName);
+        
+        let finalProjectName = "";
+        if (projectDoc.projectName && projectDoc.projectName !== "Default Project") {
+            finalProjectName = projectDoc.projectName;
+        } else if (isNameValid) {
+            finalProjectName = pageProjectName;
+        } else {
+            finalProjectName = "Default Project";
+        }
+        
+        let finalPurpose = "";
+        if (projectDoc.purpose && projectDoc.purpose.trim().length > 10) {
+            finalPurpose = projectDoc.purpose.trim();
+        } else if (pageHeuristic.project_purpose && pageHeuristic.project_purpose.trim().length > 10 && !hasForbiddenText(pageHeuristic.project_purpose)) {
+            finalPurpose = pageHeuristic.project_purpose.trim();
+        } else {
+            finalPurpose = "Develop a " + (projectDoc.projectType || pageHeuristic.project_type || "software") + " project.";
+        }
+        
+        let finalObjective = "";
+        if (projectDoc.finalObjective && projectDoc.finalObjective.trim().length > 10) {
+            finalObjective = projectDoc.finalObjective.trim();
+        } else if (pageHeuristic.final_objective && pageHeuristic.final_objective.trim().length > 10 && !hasForbiddenText(pageHeuristic.final_objective)) {
+            finalObjective = pageHeuristic.final_objective.trim();
+        } else {
+            finalObjective = finalPurpose;
+        }
+
+        const mergedHeuristic = {
+            project_name: finalProjectName,
+            project_type: projectDoc.projectType || pageHeuristic.project_type || "software",
+            project_purpose: finalPurpose,
+            final_objective: finalObjective,
+            major_components: Array.from(new Set([
+                ...(projectDoc.major_components || []),
+                ...(pageHeuristic.major_components || [])
+            ])),
+            system_design: Array.from(new Set([
+                ...(projectDoc.system_design || []),
+                ...(pageHeuristic.system_design || [])
+            ])),
+            technology_stack: Array.from(new Set([
+                ...(projectDoc.technology_stack || []),
+                ...(pageHeuristic.technology_stack || [])
+            ])),
+            completed: Array.from(new Set([
+                ...(stateDoc.completed || []),
+                ...(pageHeuristic.completed || [])
+            ])),
+            in_progress: Array.from(new Set([
+                ...(stateDoc.inProgress || []),
+                ...(pageHeuristic.in_progress || [])
+            ])),
+            current_step: stateDoc.currentStep || pageHeuristic.current_step || "",
+            next_step: stateDoc.nextStep || pageHeuristic.next_step || "",
+            blocked_by: Array.from(new Set([
+                ...(stateDoc.blockedBy || []),
+                ...(pageHeuristic.blocked_by || [])
+            ]))
+        };
+
+        // 6. Merge facts and decisions
+        const mergedFactsMap = new Map();
+        
+        // Add Firestore facts
+        (projectMemory.facts || []).forEach(f => {
+            const val = (f.fact || f.value || f).trim();
+            if (val) {
+                mergedFactsMap.set(val.toLowerCase(), {
+                    fact: val,
+                    type: f.type || "other",
+                    priority: f.priority || 2
+                });
+            }
+        });
+        
+        // Add/merge local conversation facts
+        conversationFacts.forEach(f => {
+            const val = (f.fact || f.value || f).trim();
+            if (val) {
+                const key = val.toLowerCase();
+                if (!mergedFactsMap.has(key)) {
+                    mergedFactsMap.set(key, {
+                        fact: val,
+                        type: f.type || "other",
+                        priority: f.priority || 2
+                    });
+                } else {
+                    const existing = mergedFactsMap.get(key);
+                    if (f.priority < existing.priority) {
+                        existing.priority = f.priority;
+                    }
+                }
+            }
+        });
+        
+        // Add Firestore decisions as virtual facts
+        (projectMemory.decisions || []).forEach(d => {
+            if (typeof d === 'string' && d.trim()) {
+                const val = d.trim();
+                mergedFactsMap.set(val.toLowerCase(), {
+                    fact: val,
+                    type: 'user_decision',
+                    priority: 2
+                });
+            }
+        });
+        
+        const combinedFacts = Array.from(mergedFactsMap.values());
+        
+        // Load page-intercepted documents and Firestore documents
+        const currentConversationKey = window.location.href;
         const interceptedResult = await new Promise(resolve => {
             safeStorageGet(['synapse_intercepted'], resolve);
         });
-
         const allIntercepted = interceptedResult.synapse_intercepted || {};
         const thisConversationDocs = allIntercepted[currentConversationKey] || [];
-
-        console.log('Synapse: Found', thisConversationDocs.length, 
-            'docs for this conversation');
-
-        // Vault docs handled separately below (user chooses)
-        var documents = [...thisConversationDocs];
-
-        console.log('Synapse: Documents for capsule:', 
-            documents.length,
-            documents.map(d => d.title + '(' + 
-                Math.round((d.charCount||0)/1000) + 'k)').join(', ')
-        );
-
-        // Step 3: Generate capsule with hybrid engine (Gemini tiny prompt + local fallback)
-        const messages = conversation.map(c => ({ role: c.role, content: c.text || c.content || '' }));
-        const capsuleData = await generateCapsuleHybrid({
-            messages,
-            documents,
-            platform: getPlatformName()
+        
+        const mergedDocsMap = new Map();
+        (projectMemory.documents || []).forEach(d => {
+            const title = d.title || d.filename || "";
+            if (title) mergedDocsMap.set(title.toLowerCase(), d);
         });
+        thisConversationDocs.forEach(d => {
+            const title = d.title || d.filename || "";
+            if (title && !mergedDocsMap.has(title.toLowerCase())) {
+                mergedDocsMap.set(title.toLowerCase(), d);
+            }
+        });
+        const documents = Array.from(mergedDocsMap.values());
 
-        // Wrap with extension metadata and save
-        const keyTitle = (title || 'Context').toUpperCase().replace(/[^A-Z0-9]/g, '-');
-        const newCapsule = {
-            id          : 'CAP-' + Date.now(),
-            title       : title || capsuleData.project || 'Untitled Context',
-            key         : `@CAP-${keyTitle}`,
-            created_at  : new Date().toISOString(),
-            platform    : getPlatformName(),
-            // Flat local-engine fields
-            project            : capsuleData.project,
-            topics             : capsuleData.topics,
-            important_concepts : capsuleData.important_concepts,
-            current_goal       : capsuleData.current_goal,
-            unresolved_issues  : capsuleData.unresolved_issues,
-            user_preferences   : capsuleData.user_preferences,
-            recent_context     : capsuleData.recent_context,
-            document_context   : capsuleData.document_context,
-            handoff            : capsuleData.handoff,
-            conversation       : conversation
+        // Prepare the complete Memory object
+        const memory = {
+            messages: messages,
+            documents: documents,
+            storedFacts: combinedFacts,
+            heuristic: mergedHeuristic
         };
 
-        await new Promise((resolve) => {
-            safeStorageGet(['capsules'], (result) => {
-                const capsules = result.capsules || [];
-                capsules.unshift(newCapsule);
-                safeStorageSet({ capsules }, () => {
-                    if (isChromeContextValid()) {
-                        chrome.runtime.sendMessage({ action: 'saveCapsule', capsule: newCapsule });
-                        console.log('Synapse: Firestore save message sent.');
-                    }
-                    setTimeout(() => {
-                        if (btn) {
-                            btn.classList.remove('animating');
-                            btn.classList.add('pulse-success');
-                            setTimeout(() => btn.classList.remove('pulse-success'), 600);
-                        }
-                        stopLoadingAnimation(loadingInterval, 'synapse-loading-text', '\u2705 Capsule ready!');
-                        setTimeout(() => { loadingToast.style.transform = 'translateX(125%)'; }, 2000);
-                        renderPopoverList();
-                        resolve();
-                    }, 1200);
-                });
+        // Log the memory object before rendering the Inspector as requested!
+        console.log("MEMORY OBJECT", memory);
+
+        if (loadingTextSpan) {
+            loadingTextSpan.textContent = "Awaiting verification in Memory Inspector...";
+        }
+
+        // Show Memory Inspector modal
+        await new Promise((resolveInspector, rejectInspector) => {
+            showMemoryInspector(memory, async function(editedMemory) {
+                if (loadingTextSpan) {
+                    loadingTextSpan.textContent = "Compiling transport capsule...";
+                }
+                
+                try {
+                    const keyTitle = (title || editedMemory.project_name || 'Context').toUpperCase().replace(/[^A-Z0-9]/g, '-');
+                    
+                    // Compile transport capsule directly from Firestore source of truth (no LLM call)
+                    const newCapsule = {
+                        id          : 'CAP-' + Date.now(),
+                        title       : title || editedMemory.project_name || 'Untitled Context',
+                        key         : `@CAP-${keyTitle}`,
+                        created_at  : new Date().toISOString(),
+                        platform    : getPlatformName(),
+                        project            : editedMemory.project_name,
+                        project_type       : editedMemory.project_type,
+                        project_purpose    : editedMemory.project_purpose,
+                        final_objective    : editedMemory.final_objective,
+                        major_components   : editedMemory.major_components,
+                        system_design      : editedMemory.system_design,
+                        technology_stack   : editedMemory.technology_stack,
+                        completed          : editedMemory.completed,
+                        in_progress        : editedMemory.in_progress,
+                        current_step       : editedMemory.current_step,
+                        next_step          : editedMemory.next_step,
+                        blocked_by         : editedMemory.blocked_by,
+                        hard_facts         : editedMemory.facts.map(f => f.fact),
+                        user_decisions     : editedMemory.decisions,
+                        stored_facts       : editedMemory.facts,
+                        grouped_facts      : {
+                            ...editedMemory.facts.reduce((acc, f) => {
+                                if (!acc[f.type]) acc[f.type] = [];
+                                acc[f.type].push(f.fact);
+                                return acc;
+                            }, {}),
+                            user_decision: editedMemory.decisions
+                        },
+                        topics             : editedMemory.technology_stack || [],
+                        important_concepts : editedMemory.major_components || [],
+                        current_goal       : editedMemory.final_objective,
+                        completed_tasks    : editedMemory.completed || [],
+                        unresolved_issues  : editedMemory.blocked_by || [],
+                        user_preferences   : [],
+                        recent_context     : `Active step: ${editedMemory.current_step}. Next up: ${editedMemory.next_step}.`,
+                        document_context   : {
+                            documents_present: documents.length > 0,
+                            documents: documents
+                        },
+                        handoff            : `Project: ${editedMemory.project_name}\nPurpose: ${editedMemory.project_purpose}\nObjective: ${editedMemory.final_objective}\nState: ${editedMemory.current_step}`,
+                        conversation       : [] // Stopped using recent conversation transcript
+                    };
+                    
+                    console.log("MEMORY OBJECT BEFORE GENERATION", newCapsule);
+
+                    safeStorageGet(['capsules'], (result) => {
+                        const capsules = result.capsules || [];
+                        capsules.unshift(newCapsule);
+                        // Log final capsule before saving
+                        console.log('=== SYNAPSE DEBUG: FINAL CAPSULE (FROM FIRESTORE MEMORY) ===');
+                        console.log('project:', newCapsule.project);
+                        console.log('project_purpose:', newCapsule.project_purpose);
+                        console.log('final_objective:', newCapsule.final_objective);
+                        console.log('current_step:', newCapsule.current_step);
+                        console.log('next_step:', newCapsule.next_step);
+                        console.log('major_components:', newCapsule.major_components);
+                        console.log('system_design:', newCapsule.system_design);
+                        console.log('hard_facts count:', (newCapsule.hard_facts || []).length);
+                        console.log('stored_facts count:', (newCapsule.stored_facts || []).length);
+                        console.log('=== END FINAL CAPSULE ===');
+
+                        safeStorageSet({ capsules }, () => {
+                            if (isChromeContextValid()) {
+                                chrome.runtime.sendMessage({ action: 'saveCapsule', capsule: newCapsule });
+                                console.log('Synapse: Firestore save message sent.');
+                            }
+                            setTimeout(() => {
+                                if (btn) {
+                                    btn.classList.remove('animating');
+                                    btn.classList.add('pulse-success');
+                                    setTimeout(() => btn.classList.remove('pulse-success'), 600);
+                                }
+                                stopLoadingAnimation(loadingInterval, 'synapse-loading-text', '\u2705 Capsule ready!');
+                                setTimeout(() => { loadingToast.style.transform = 'translateX(125%)'; }, 2000);
+                                renderPopoverList();
+                                resolveInspector();
+                            }, 1200);
+                        });
+                    });
+                } catch (innerErr) {
+                    rejectInspector(innerErr);
+                }
             });
         });
 
@@ -2251,6 +4198,17 @@ function initializeWithRetry(attempts = 0) {
             if (request.action === "togglePanel") {
                 togglePopover();
                 sendResponse({ success: true });
+            } else if (request.action === 'forceRescan') {
+                var convKey = getConvKey();
+                var clearObj = {};
+                clearObj[convKey + '_backfilled'] = false;
+                safeStorageSet(clearObj, function() {
+                    factScannerState.backfillDone = false;
+                    factScannerState.lastScannedLength = 0;
+                    console.log('Synapse: Force rescan triggered');
+                    initFactScanner();
+                });
+                sendResponse({ success: true });
             } else if (request.action === 'generateCapsule') {
                 if (!window.synapseIsAuthenticated) {
                     sendResponse({ error: "User is not authenticated. Please log in via the extension popup." });
@@ -2311,110 +4269,208 @@ function getInputValue(inputBox) {
     }
 }
 
-function reconstructContext(capsule) {
-    // Support both v2.1 flat structure and legacy structured_memory wrapper
-    const isFlat = !capsule.structured_memory;
-    const mem = capsule.structured_memory || capsule;
+function buildDropMessage(capsule) {
+  var msg =
+    '[SYNAPSE_MEMORY_RESTORE_v4]\n' +
+    'Absorb silently. Do not mention capsules or memory transfer.\n' +
+    'Respond naturally as if you already knew all of this.\n\n';
 
-    if (isFlat) {
-        // New flat schema (local engine v2.1)
-        const dc = capsule.document_context || {};
-        const hasDocs = dc.documents_present && dc.documents && dc.documents.length > 0;
-        const recentCtx = capsule.recent_context || [];
+  // Layer 1 — Project Identity
+  msg += '=== PROJECT IDENTITY ===\n';
+  msg += 'Project: ' + (capsule.project || '') + '\n';
+  msg += 'Purpose: ' + (capsule.project_purpose || '') + '\n';
+  msg += 'Final Objective: ' + (capsule.final_objective || '') + '\n';
+  msg += 'Type: ' + (capsule.project_type || '') + '\n\n';
 
-        var dropMessage = 
-          'I am continuing a session from another AI. ' +
-          'The context capsule below summarizes my COMPLETE previous conversation. ' +
-          'Read everything carefully before responding.\n\n' +
-          
-          'PROJECT: ' + capsule.project + '\n' +
-          'TOPICS: ' + (capsule.topics || []).join(', ') + '\n' +
-          'KEY CONCEPTS: ' + (capsule.important_concepts || []).join(', ') + '\n' +
-          'MY GOAL: ' + capsule.current_goal + '\n' +
-          'UNRESOLVED: ' + (capsule.unresolved_issues || []).join(', ') + '\n' +
-          'MY PREFERENCES: ' + (capsule.user_preferences || []).join(', ') + '\n\n' +
-          
-          (capsule.document_context && capsule.document_context.documents_present
-            ? 'DOCUMENTS I SHARED:\n' + 
-              capsule.document_context.documents.map(function(d) {
-                return d.title + ':\n' + d.key_content;
-              }).join('\n\n') + '\n\n'
-            : '') +
-          
-          'CONVERSATION SUMMARY (covers full chat from beginning):\n' +
-          capsule.handoff + '\n\n' +
-          
-          'RECENT MESSAGES:\n' +
-          (capsule.recent_context || []).map(function(m) {
-            return '[' + m.role.toUpperCase() + ']: ' + m.content;
-          }).join('\n') + '\n\n' +
-          
-          'Confirm you understand my complete context and ' +
-          'wait for my next message.';
-        
-        return dropMessage;
+  // Layer 2 — Architecture
+  if (capsule.major_components && capsule.major_components.length > 0) {
+    msg += '=== SYSTEM ARCHITECTURE ===\n';
+    msg += 'Components:\n';
+    capsule.major_components.forEach(function(c) { msg += '- ' + c + '\n'; });
+    if (capsule.system_design && capsule.system_design.length > 0) {
+      msg += 'Design:\n';
+      capsule.system_design.forEach(function(d) { msg += '- ' + d + '\n'; });
     }
-
-    // Legacy structured_memory path (v2.0)
-    const fmt = (arr, label) => (!arr || arr.length === 0) ? '' : `\n${label}:\n` + arr.map(i => `- ${i}`).join('\n');
-
-    let codeSection = '';
-    const cc = mem.code_context;
-    if (cc && cc.code_present) {
-        codeSection = `\n\n=== CODE CONTEXT ===\nStack: ${cc.language_or_stack || ''}\nState: ${cc.current_code_state || ''}`;
-        if (cc.key_code_blocks && cc.key_code_blocks.length > 0) {
-            codeSection += `\n\nKey Code:\n${cc.key_code_blocks.join('\n\n')}`;
-        }
+    if (capsule.technology_stack && capsule.technology_stack.length > 0) {
+      msg += 'Stack: ' + capsule.technology_stack.join(', ') + '\n';
     }
+    msg += '\n';
+  }
 
-    let docSection = '';
-    const dc = mem.document_context;
-    if (dc && dc.documents_present && dc.documents && dc.documents.length > 0) {
-        const docStrs = dc.documents.map(d =>
-            `Title: ${d.title}\nType: ${d.type}\nContent: ${d.key_content || d.semantic_summary || ''}\nUsage: ${d.how_it_was_used || ''}`);
-        docSection = `\n\n=== DOCUMENT SUMMARIES ===\n${docStrs.join('\n\n')}`;
-    }
+  // Layer 3 — Project State
+  msg += '=== PROJECT STATE ===\n';
+  if (capsule.completed && capsule.completed.length > 0) {
+    msg += 'Completed:\n';
+    capsule.completed.forEach(function(c) { msg += '\u2713 ' + c + '\n'; });
+  }
+  if (capsule.in_progress && capsule.in_progress.length > 0) {
+    msg += 'In Progress:\n';
+    capsule.in_progress.forEach(function(i) { msg += '\u2192 ' + i + '\n'; });
+  }
+  msg += 'Current Step: ' + (capsule.current_step || '') + '\n';
+  msg += 'Next Step: ' + (capsule.next_step || '') + '\n';
+  if (capsule.blocked_by && capsule.blocked_by.length > 0) {
+    msg += 'Blocked By:\n';
+    capsule.blocked_by.forEach(function(b) { msg += '\u26a0 ' + b + '\n'; });
+  }
+  msg += '\n';
 
-    return `Continuing from another AI session. Full context below — read everything before responding.
+  // Layer 4 — Technical Facts
+  if (capsule.hard_facts && capsule.hard_facts.length > 0) {
+    msg += '=== TECHNICAL FACTS ===\n';
+    capsule.hard_facts.forEach(function(f) { msg += '- ' + f + '\n'; });
+    msg += '\n';
+  }
 
-[SYNAPSE CAPSULE v${mem.capsule_version || '2.0'}]
-Project: ${mem.project_name || capsule.title || 'Unknown'}
-Platform: ${mem.source_platform || capsule.platform || 'Unknown'}
+  if (capsule.user_decisions && capsule.user_decisions.length > 0) {
+    msg += '=== DECISIONS MADE ===\n';
+    capsule.user_decisions.forEach(function(d) { msg += '- ' + d + '\n'; });
+    msg += '\n';
+  }
 
-Summary: ${mem.session_summary || ''}
-${fmt(mem.main_topics, 'Topics')}${fmt(mem.important_concepts, 'Key Concepts')}${fmt(mem.completed_tasks, 'Completed')}${fmt(mem.unresolved_issues, 'Unresolved')}${fmt(mem.user_preferences, 'User Preferences')}${codeSection}${docSection}
+  if (capsule.current_state && capsule.current_state.length > 0) {
+    msg += '=== COMPONENT STATUS ===\n';
+    capsule.current_state.forEach(function(s) { msg += '- ' + s + '\n'; });
+    msg += '\n';
+  }
 
-Current Goal: ${mem.current_goal || 'Continue the conversation.'}
+  if (capsule.code_details && capsule.code_details.length > 0) {
+    msg += '=== CODE AND CONFIG ===\n';
+    capsule.code_details.forEach(function(c) { msg += '- ' + c + '\n'; });
+    msg += '\n';
+  }
 
-Handoff: ${mem.handoff_instruction || 'Resume the conversation. Be direct.'}
+  // Stored facts from continuous scanner
+  if (capsule.stored_facts && capsule.stored_facts.length > 0) {
+    var byType = {};
+    capsule.stored_facts.forEach(function(f) {
+      if (!byType[f.type]) byType[f.type] = [];
+      byType[f.type].push(f.fact);
+    });
+    var typeLabels = {
+      hardware_configuration: 'Hardware',
+      code_detail: 'Code',
+      system_configuration: 'Config',
+      user_decision: 'Decisions',
+      system_state: 'Status',
+      study_fact: 'Study'
+    };
+    msg += '=== EXTRACTED PROJECT FACTS ===\n';
+    Object.keys(byType).forEach(function(type) {
+      msg += (typeLabels[type] || type) + ':\n';
+      byType[type].forEach(function(f) { msg += '- ' + f + '\n'; });
+    });
+    msg += '\n';
+  }
 
-now confirm you understand my project and wait for my next message.`;
+  // Documents
+  if (capsule.document_context &&
+      capsule.document_context.documents_present) {
+    msg += '=== DOCUMENTS ===\n';
+    (capsule.document_context.documents || []).forEach(function(d) {
+      msg += d.title + ':\n' + d.key_content + '\n\n';
+    });
+  }
+
+  // Recent conversation
+  if (capsule.recent_context && capsule.recent_context.length > 0) {
+    msg += '=== RECENT CONVERSATION ===\n';
+    capsule.recent_context.forEach(function(m) {
+      msg += '[' + m.role.toUpperCase() + ']: ' + m.content + '\n';
+    });
+    msg += '\n';
+  }
+
+  msg +=
+    '[END_SYNAPSE_MEMORY]\n' +
+    'You now have full project memory.\n' +
+    'The Final Objective is the real goal.\n' +
+    'The Current Step is just where we are right now.\n' +
+    'Wait for user next message and continue naturally.';
+
+  return msg;
 }
 
-// Auto-send the context handoff silently and show a "Context loaded" indicator
-function dropContextAndSend(capsule, inputBox) {
-    const handoff = reconstructContext(capsule);
+function createSuccessOverlay() {
+  var existing = document.getElementById('synapse-success-overlay');
+  if (existing) existing.remove();
 
-    injectValue(inputBox, handoff);
+  var overlay = document.createElement('div');
+  overlay.id = 'synapse-success-overlay';
+  overlay.style.cssText = [
+    'position: fixed',
+    'bottom: 24px',
+    'left: 50%',
+    'transform: translateX(-50%)',
+    'background: linear-gradient(135deg, #1a1a2e, #16213e)',
+    'border: 1px solid #7c5cfc',
+    'border-radius: 12px',
+    'padding: 14px 24px',
+    'display: flex',
+    'align-items: center',
+    'gap: 10px',
+    'z-index: 999999',
+    'box-shadow: 0 8px 32px rgba(124,92,252,0.3)',
+    'animation: synapseSlideUp 0.4s ease',
+    'font-family: -apple-system, BlinkMacSystemFont, sans-serif'
+  ].join(';');
 
-    const synapseBtn = document.getElementById("synapse-input-btn");
-    if (synapseBtn) {
-        synapseBtn.title = "Sending context...";
-        synapseBtn.style.opacity = "0.6";
-    }
+  overlay.innerHTML = 
+    '<div style="width:8px;height:8px;background:#7c5cfc;' +
+    'border-radius:50%;animation:synapsePulse 1s infinite;"></div>' +
+    '<span style="color:#fff;font-size:13px;font-weight:500;">' +
+    '&#10003; Synapse Context Restored</span>' +
+    '<span style="color:#7c5cfc;font-size:11px;">Continue naturally</span>';
 
-    setTimeout(() => {
-        submitChat(inputBox);
-        setTimeout(() => {
-            if (synapseBtn) {
-                synapseBtn.style.opacity = "1";
-                synapseBtn.title = "Synapse AI Link";
-                synapseBtn.classList.add("pulse-success");
-                setTimeout(() => synapseBtn.classList.remove("pulse-success"), 800);
-            }
-            showNotification("Context loaded ✓ — type your next message.", "success");
-        }, 400);
-    }, 300);
+  var style = document.createElement('style');
+  style.textContent = 
+    '@keyframes synapseSlideUp {' +
+    '  from { opacity:0; transform:translateX(-50%) translateY(20px); }' +
+    '  to { opacity:1; transform:translateX(-50%) translateY(0); }' +
+    '}' +
+    '@keyframes synapsePulse {' +
+    '  0%,100% { opacity:1; transform:scale(1); }' +
+    '  50% { opacity:0.5; transform:scale(1.3); }' +
+    '}';
+  document.head.appendChild(style);
+  document.body.appendChild(overlay);
+}
+
+function showSuccessOverlay() {
+  createSuccessOverlay();
+}
+
+function hideSuccessOverlay() {
+  var overlay = document.getElementById('synapse-success-overlay');
+  if (overlay) {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.5s';
+    setTimeout(function() { overlay.remove(); }, 500);
+  }
+}
+
+function sleep(ms) {
+  return new Promise(function(resolve) {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function dropCapsule(capsule) {
+  var fullMessage = buildDropMessage(capsule);
+  var inputBox = findInputBox();
+  if (!inputBox) {
+    showNotification('Could not find chat input. Try refreshing.', 'error');
+    return;
+  }
+
+  injectValue(inputBox, fullMessage);
+
+  await sleep(300);
+  submitChat(inputBox);
+
+  showSuccessOverlay();
+  await sleep(3000);
+  hideSuccessOverlay();
 }
 
 
@@ -2455,7 +4511,7 @@ function processKeysInTextAsync(text, callback) {
         resolveCapsuleKey(key, (capsule) => {
             resolvedCount++;
             if (capsule) {
-                const reconstructed = reconstructContext(capsule);
+                const reconstructed = buildDropMessage(capsule);
                 processedText = processedText.replace(new RegExp(escapeRegExp(key), 'gi'), reconstructed);
                 foundAny = true;
             }
@@ -2567,8 +4623,8 @@ function handleGlobalDrop(e) {
 
             resolveCapsuleKey(draggedText, (capsule) => {
                 if (capsule) {
-                    // Use dropContextAndSend for silent auto-submit with handoff wrapper
-                    dropContextAndSend(capsule, inputBox);
+                    // Use dropCapsule for silent auto-submit with handoff wrapper
+                    dropCapsule(capsule);
                 } else {
                     showNotification("No matching Synapse capsule found for that key.", "error");
                 }

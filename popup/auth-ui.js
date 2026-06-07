@@ -1,4 +1,4 @@
-import { loginUser, registerUser, loginWithGoogle, logoutUser, onAuthStateChange, resetPassword } from "./auth.js";
+import { loginUser, registerUser, loginWithGoogle, logoutUser, onAuthStateChange, resetPassword, getCurrentUser } from "./auth.js";
 import { getUserProfile, updateUserProfile } from "./profile.js";
 import { changePassword } from "./security.js";
 
@@ -8,11 +8,16 @@ export function initAuthUI(onAuthSuccess) {
     main: document.getElementById('mainAppScreen'),
     profile: document.getElementById('profileScreen'),
     security: document.getElementById('securityScreen'),
+    about: document.getElementById('aboutScreen'),
     guidelines: document.getElementById('guidelinesScreen'),
-    contact: document.getElementById('contactScreen')
+    contact: document.getElementById('contactScreen'),
+    dashboard: document.getElementById('dashboardScreen')
   };
 
   function showScreen(screenId) {
+    if (!getCurrentUser() && screenId !== 'auth') {
+      screenId = 'auth';
+    }
     Object.values(screens).forEach(s => {
       if (s) s.classList.remove('active');
     });
@@ -197,6 +202,10 @@ export function initAuthUI(onAuthSuccess) {
         profileMsg.style.color = 'var(--success)';
         profileMsg.style.display = 'block';
         
+        // Update profile display names
+        const dispName = document.getElementById('profileNameDisplay');
+        if (dispName) dispName.innerText = name;
+
         // Update avatar text
         if (headerAvatar) {
           headerAvatar.innerText = name.substring(0, 2).toUpperCase();
@@ -253,10 +262,38 @@ export function initAuthUI(onAuthSuccess) {
     });
   }
 
+  // Send Password Reset Email (from Security Screen)
+  const btnResetPasswordEmail = document.getElementById('btnResetPasswordEmail');
+  if (btnResetPasswordEmail) {
+    btnResetPasswordEmail.addEventListener('click', async () => {
+      securityError.style.display = 'none';
+      securitySuccess.style.display = 'none';
+      const user = getCurrentUser();
+      if (!user || !user.email) {
+        securityError.innerText = "No authenticated user or email found.";
+        securityError.style.display = 'block';
+        return;
+      }
+      btnResetPasswordEmail.disabled = true;
+      btnResetPasswordEmail.innerText = 'Sending Reset Email...';
+      try {
+        await resetPassword(user.email);
+        securitySuccess.innerText = "Password reset email sent. Please check your inbox.";
+        securitySuccess.style.display = 'block';
+      } catch (err) {
+        securityError.innerText = err.message.replace('Firebase: ', '');
+        securityError.style.display = 'block';
+      } finally {
+        btnResetPasswordEmail.disabled = false;
+        btnResetPasswordEmail.innerText = '📧 Send Password Reset Email';
+      }
+    });
+  }
+
   // Listen to Auth State
   onAuthStateChange(async (user) => {
     if (user) {
-      showScreen('main');
+      showScreen('dashboard');
       if (headerAvatar) {
         headerAvatar.style.display = 'flex';
       }
@@ -289,6 +326,12 @@ export function initAuthUI(onAuthSuccess) {
         
         document.getElementById('profileName').value = profile.name || '';
         document.getElementById('profileEmail').value = profile.email || '';
+        
+        const dispName = document.getElementById('profileNameDisplay');
+        if (dispName) dispName.innerText = profile.name || 'Anonymous';
+        const dispEmail = document.getElementById('profileEmailDisplay');
+        if (dispEmail) dispEmail.innerText = profile.email || '';
+
         document.getElementById('profileProviderDisplay').innerText = profile.provider === 'google' ? 'Google' : 'Email/Password';
         
         if (profile.createdAt) {

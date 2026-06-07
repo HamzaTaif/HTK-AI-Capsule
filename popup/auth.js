@@ -8,11 +8,33 @@ import {
   doc,
   setDoc,
   getDoc,
+  updateDoc,
   sendPasswordResetEmail
 } from "./firebase.js";
 
 export async function loginUser(email, password) {
-  return await signInWithEmailAndPassword(auth, email, password);
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
+  
+  // Update/create profile in Firestore
+  const userDocRef = doc(db, "users", user.uid);
+  const userDoc = await getDoc(userDocRef);
+  const now = new Date().toISOString();
+  if (userDoc.exists()) {
+    await updateDoc(userDocRef, {
+      lastLogin: now
+    });
+  } else {
+    await setDoc(userDocRef, {
+      name: user.displayName || email.split('@')[0],
+      email: email,
+      provider: 'email',
+      createdAt: now,
+      lastLogin: now
+    });
+  }
+  
+  return userCredential;
 }
 
 export async function registerUser(name, email, password) {
@@ -21,11 +43,11 @@ export async function registerUser(name, email, password) {
   
   // Create profile in Firestore
   await setDoc(doc(db, "users", user.uid), {
-    uid: user.uid,
     name: name,
     email: email,
     provider: 'email',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    lastLogin: new Date().toISOString()
   });
   
   return userCredential;
@@ -37,15 +59,20 @@ export async function loginWithGoogle() {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
     
-    const userDoc = await getDoc(doc(db, "users", user.uid));
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+    const now = new Date().toISOString();
     if (!userDoc.exists()) {
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
+      await setDoc(userDocRef, {
         name: user.displayName || user.email.split('@')[0],
         email: user.email,
         provider: 'google',
-        photoURL: user.photoURL,
-        createdAt: new Date().toISOString()
+        createdAt: now,
+        lastLogin: now
+      });
+    } else {
+      await updateDoc(userDocRef, {
+        lastLogin: now
       });
     }
     return result;

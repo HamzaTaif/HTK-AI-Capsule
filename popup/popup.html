@@ -240,8 +240,11 @@
 
   <!-- ── DROPDOWN MENU ── -->
   <div id="profileDropdown" class="dropdown-menu">
+    <button class="dropdown-item nav-btn" data-target="dashboardScreen">🏠 Dashboard</button>
+    <button class="dropdown-item nav-btn" data-target="mainAppScreen">💾 Saved Synapses</button>
     <button class="dropdown-item nav-btn" data-target="profileScreen">👤 Personal Information</button>
     <button class="dropdown-item nav-btn" data-target="securityScreen">🔒 Security</button>
+    <button class="dropdown-item nav-btn" data-target="aboutScreen">ℹ️ About Synapse</button>
     <button class="dropdown-item nav-btn" data-target="guidelinesScreen">📜 Community Guidelines</button>
     <button class="dropdown-item nav-btn" data-target="contactScreen">✉️ Contact & Support</button>
     <div style="height:1px; background:var(--border); margin:4px 0;"></div>
@@ -295,7 +298,57 @@
     </div>
   </div>
 
+  <!-- ── 1.5. DASHBOARD SCREEN ── -->
+  <div id="dashboardScreen" class="screen">
+    <!-- Stat Grid -->
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;">
+      <div style="background: var(--card-bg); border: 1px solid var(--border); padding: 8px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Projects</div>
+        <div id="dash-stat-projects" style="font-size: 16px; font-weight: 700; color: var(--primary); margin-top: 2px;">0</div>
+      </div>
+      <div style="background: var(--card-bg); border: 1px solid var(--border); padding: 8px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Documents</div>
+        <div id="dash-stat-documents" style="font-size: 16px; font-weight: 700; color: #0099ff; margin-top: 2px;">0</div>
+      </div>
+      <div style="background: var(--card-bg); border: 1px solid var(--border); padding: 8px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Facts</div>
+        <div id="dash-stat-facts" style="font-size: 16px; font-weight: 700; color: #10b981; margin-top: 2px;">0</div>
+      </div>
+      <div style="background: var(--card-bg); border: 1px solid var(--border); padding: 8px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Capsules</div>
+        <div id="dash-stat-capsules" style="font-size: 16px; font-weight: 700; color: #a855f7; margin-top: 2px;">0</div>
+      </div>
+    </div>
 
+    <!-- Recent Projects List -->
+    <div class="section-title">Recent Projects</div>
+    <div id="recentProjectsList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 2px; margin-bottom: 8px;">
+      <div class="empty-state">No projects found.</div>
+    </div>
+
+    <!-- Project Details Action Drawer -->
+    <div id="projectActionContainer" style="display: none; background: rgba(255,255,255,0.02); border: 1px solid var(--primary); border-radius: 8px; padding: 10px; margin-top: 6px; animation: fadeIn 0.2s ease;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <div id="activeProjectName" style="font-size: 11px; font-weight: 700; color: #fff; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+        <button id="closeProjectActions" style="background: none; border: none; color: var(--text-muted); font-size: 10px; cursor: pointer; padding: 2px 4px;">✕</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <button id="btnViewMemory" class="btn btn-secondary" style="padding: 5px; font-size: 10px;">View Memory</button>
+        <button id="btnViewDocuments" class="btn btn-secondary" style="padding: 5px; font-size: 10px;">View Documents</button>
+        <button id="btnGenerateCapsule" class="btn" style="padding: 5px; font-size: 10px;">Generate Capsule</button>
+      </div>
+    </div>
+
+    <!-- Project Details Sub-View Modal -->
+    <div id="dashboardDetailsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13,13,21,0.98); z-index: 200; box-sizing: border-box; padding: 12px; flex-direction: column; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 10px;">
+        <h3 id="modalDetailTitle" style="margin: 0; font-size: 12px; color: var(--primary);">Project Memory</h3>
+        <button id="closeDetailModal" class="back-btn" style="padding: 2px 6px; font-size: 10px;">Close</button>
+      </div>
+      <div id="modalDetailContent" style="font-size: 11px; color: #e5e7eb; line-height: 1.4; flex: 1;">
+      </div>
+    </div>
+  </div>
 
   <!-- ── 2. MAIN APP SCREEN ── -->
   <div id="mainAppScreen" class="screen">
@@ -304,6 +357,19 @@
       <div class="empty-state">No context saved yet.</div>
     </div>
     <button id="generateBtn" class="btn" style="margin-top: 8px;">Generate Capsule</button>
+    <button id="rescanBtn" style="
+      background: transparent;
+      border: 1px solid #333;
+      color: #666;
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 6px;
+      width: 100%;
+      font-family: var(--font);
+      transition: all 0.2s;
+    ">🔄 Rescan Current Conversation</button>
     
     <div id="vaultSection" style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -373,6 +439,15 @@
         <input type="password" id="secConfirmPassword" class="input-field" required minlength="6">
       </div>
       <button type="submit" id="btnUpdatePassword" class="btn" style="margin-top:12px;">Update Password</button>
+      
+      <div style="margin: 16px 0; display: flex; align-items: center; gap: 8px;">
+        <div style="flex: 1; height: 1px; background: var(--border);"></div>
+        <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">OR</span>
+        <div style="flex: 1; height: 1px; background: var(--border);"></div>
+      </div>
+      
+      <button type="button" id="btnResetPasswordEmail" class="btn btn-secondary">📧 Send Password Reset Email</button>
+      
       <div id="securityError" class="error-msg"></div>
       <div id="securitySuccess" class="success-msg">Password updated successfully!</div>
     </form>
@@ -413,6 +488,28 @@
         </button>
         <button class="btn btn-secondary" onclick="alert('Support email: support@synapseai.app')">
           ✉️ Email Support
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 7. ABOUT SCREEN ── -->
+  <div id="aboutScreen" class="screen">
+    <div class="screen-header">
+      <button class="back-btn nav-btn" data-target="mainAppScreen">← Back</button>
+      <h3 class="screen-title">About</h3>
+    </div>
+    <div class="info-block" style="text-align:center; padding:24px 12px;">
+      <h4 style="margin:0 0 4px; font-size:18px; color:var(--primary);">Synapse AI</h4>
+      <p style="font-size:12px; color:var(--text-muted); margin:0 0 16px;">Version 1.0.0</p>
+      
+      <div class="user-avatar large" style="background:var(--primary); color:#000;">HT</div>
+      <h4 style="margin:12px 0 4px; font-size:16px;">Hamza Taif (HTK)</h4>
+      <p style="font-size:12px; color:var(--text-muted); margin:0;">Lead Developer</p>
+      
+      <div style="margin-top:20px; display:flex; flex-direction:column; gap:8px;">
+        <button class="btn btn-secondary" onclick="window.open('https://linkedin.com/in/hamza-taif-placeholder', '_blank')">
+          🔗 Connect on LinkedIn
         </button>
       </div>
     </div>

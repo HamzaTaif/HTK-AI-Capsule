@@ -96,10 +96,38 @@ function buildVaultItemHTML(docItem) {
 }
 
 function renderVault(vault, intercepted) {
+  const user = auth.currentUser;
+  if (!user) {
+    const countEl = document.getElementById("vaultCount");
+    if (countEl) countEl.textContent = "0 files";
+    const list = document.getElementById("vaultFilesList");
+    if (list) list.innerHTML = "";
+    return;
+  }
+
   const allDocs = [];
-  vault.forEach(function(v) { allDocs.push(v); });
-  intercepted.forEach(function(i) {
-    if (!vault.find(function(v) { return v.title === i.title; })) {
+  vault.forEach(function(v) {
+    if (v.owner_uid === user.uid) {
+      allDocs.push(v);
+    }
+  });
+
+  let flatIntercepted = [];
+  if (Array.isArray(intercepted)) {
+    flatIntercepted = intercepted;
+  } else if (intercepted && typeof intercepted === 'object') {
+    Object.keys(intercepted).forEach(function(key) {
+      const docs = intercepted[key];
+      if (Array.isArray(docs)) {
+        docs.forEach(function(d) {
+          flatIntercepted.push(d);
+        });
+      }
+    });
+  }
+
+  flatIntercepted.forEach(function(i) {
+    if (!allDocs.find(function(v) { return v.title === i.title; })) {
       allDocs.push(i);
     }
   });
@@ -126,7 +154,7 @@ function removeDoc(source, title) {
     vaultDocs = vaultDocs.filter(function(d) { return d.title !== title; });
     safeStorageSet({ synapse_vault: vaultDocs });
     safeStorageGet(["synapse_intercepted"], function(result) {
-      renderVault(vaultDocs, result.synapse_intercepted || []);
+      renderVault(vaultDocs, result.synapse_intercepted || {});
     });
     const user = auth.currentUser;
     if (user && docToDelete && docToDelete.id) {
@@ -134,9 +162,22 @@ function removeDoc(source, title) {
     }
   } else {
     safeStorageGet(["synapse_intercepted"], function(result) {
-      const updated = (result.synapse_intercepted || []).filter(function(d) { return d.title !== title; });
-      safeStorageSet({ synapse_intercepted: updated });
-      renderVault(vaultDocs, updated);
+      const intercepted = result.synapse_intercepted || {};
+      if (Array.isArray(intercepted)) {
+        const updated = intercepted.filter(function(d) { return d.title !== title; });
+        safeStorageSet({ synapse_intercepted: updated }, function() {
+          renderVault(vaultDocs, updated);
+        });
+      } else {
+        Object.keys(intercepted).forEach(function(url) {
+          if (Array.isArray(intercepted[url])) {
+            intercepted[url] = intercepted[url].filter(function(d) { return d.title !== title; });
+          }
+        });
+        safeStorageSet({ synapse_intercepted: intercepted }, function() {
+          renderVault(vaultDocs, intercepted);
+        });
+      }
     });
   }
 }
@@ -208,9 +249,26 @@ async function processVaultFiles(fileList) {
     renderVault(vaultDocs, []);
 
     let extractedText = "";
+    let summary = "";
+    let concepts = [];
     try {
       if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
         extractedText = await extractPDFFromFile(file);
+        try {
+          const response = await new Promise(resolve => {
+            chrome.runtime.sendMessage({
+              action: 'processPDF',
+              filename: file.name,
+              text: extractedText
+            }, resolve);
+          });
+          if (response && response.success && response.doc) {
+            summary = response.doc.summary;
+            concepts = response.doc.concepts;
+          }
+        } catch (err) {
+          console.warn("Failed to process PDF in background:", err);
+        }
       } else if (file.name.endsWith(".docx") || file.name.endsWith(".doc")) {
         extractedText = await extractDOCXFromFile(file);
       } else if (file.name.endsWith(".pptx") || file.name.endsWith(".ppt")) {
@@ -231,6 +289,8 @@ async function processVaultFiles(fileList) {
       vaultDocs[idx].compressedText = compressTextLocally(extractedText, 3000);
       vaultDocs[idx].charCount = extractedText.length;
       vaultDocs[idx].status = extractedText.length > 50 ? "ready" : "empty";
+      if (summary) vaultDocs[idx].summary = summary;
+      if (concepts && concepts.length > 0) vaultDocs[idx].concepts = concepts;
     }
 
     safeStorageSet({ synapse_vault: vaultDocs });
@@ -346,8 +406,23 @@ function buildCapsuleItemHTML(capsule) {
 }
 
 function loadCapsules() {
+  const user = auth.currentUser;
+  if (!user) {
+    if (!capsuleListEl) {
+      capsuleListEl = document.getElementById("capsuleList");
+    }
+    if (capsuleListEl) {
+      capsuleListEl.innerHTML = '<div class="empty-state">Please log in to view synapses.</div>';
+    }
+    return;
+  }
+
   chrome.storage.local.get(["capsules"], function(result) {
-    const capsules = result.capsules || [];
+    const allCapsules = result.capsules || [];
+    const capsules = allCapsules.filter(function(c) {
+      return c.owner_uid === user.uid;
+    });
+
     if (!capsuleListEl) {
       capsuleListEl = document.getElementById("capsuleList");
     }
@@ -617,6 +692,7 @@ document.addEventListener("DOMContentLoaded", function() {
         renderVault(vaultDocs, result.synapse_intercepted || []);
       });
     });
+    loadDashboard();
   });
 
   auth.onAuthStateChanged(function(user) {
@@ -722,7 +798,438 @@ document.addEventListener("DOMContentLoaded", function() {
           showDocumentSelector(allAvailableDocs);
         });
       }
+
+      // Rescan button — triggers full historical backfill on active tab
+      const rescanBtn = document.getElementById("rescanBtn");
+      if (rescanBtn) {
+        rescanBtn.style.display = "block";
+        rescanBtn.addEventListener("click", function() {
+          chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            if (!tabs[0]) return;
+            chrome.tabs.sendMessage(tabs[0].id, { action: "forceRescan" }, function(response) {
+              if (chrome.runtime.lastError) {
+                rescanBtn.textContent = "✗ Could not reach page";
+              } else {
+                rescanBtn.textContent = "✓ Rescan triggered — check console";
+                rescanBtn.style.color = "#00ffcc";
+                rescanBtn.style.borderColor = "#00ffcc";
+              }
+              setTimeout(function() {
+                rescanBtn.textContent = "🔄 Rescan Current Conversation";
+                rescanBtn.style.color = "#666";
+                rescanBtn.style.borderColor = "#333";
+              }, 3000);
+            });
+          });
+        });
+      }
     }
   });
+
+  // ── DASHBOARD SYSTEM ──
+  const MOCK_PROJECTS = {
+    "water-tank-controller": {
+      projectName: "Water Tank Controller",
+      projectType: "hardware",
+      purpose: "Automate water levels in residential tanks.",
+      finalObjective: "Maintain optimal level without user intervention.",
+      major_components: ["NodeMCU", "Ultrasonic Sensor", "Relay", "Water Pump"],
+      system_design: ["Relay control switch", "Sensor polling loop"],
+      technology_stack: ["C++", "Arduino IDE"],
+      facts: [
+        { fact: "Pump connected to Relay Pin D1", type: "hardware", priority: 1 },
+        { fact: "Ultrasonic Echo Pin to D2", type: "hardware", priority: 1 },
+        { fact: "Ultrasonic Trigger Pin to D3", type: "hardware", priority: 1 },
+        { fact: "Low Threshold set to 20%", type: "threshold", priority: 2 },
+        { fact: "High Threshold set to 95%", type: "threshold", priority: 2 }
+      ],
+      state: {
+        currentStep: "Calibrating sensor depth",
+        nextStep: "Testing auto-cutoff logic",
+        completed: ["Circuit assembly", "Basic NodeMCU Wi-Fi config"],
+        inProgress: ["Calibrating sensor"],
+        blockedBy: []
+      },
+      decisions: [
+        "Switch from analog float switch to ultrasonic sensor for higher reliability."
+      ],
+      documents: [
+        { title: "Water_Sensor_Spec.pdf", summary: "Technical specs for the ultrasonic sensor.", concepts: ["Ultrasonic Wave Velocity", "Air Gap Correction", "Calibration Offset"] }
+      ]
+    },
+    "oop-exam-prep": {
+      projectName: "OOP Exam Prep",
+      projectType: "study",
+      purpose: "Prepare for midterm examination.",
+      finalObjective: "Master inheritance, polymorphism, and memory management in C++.",
+      major_components: ["C++ Compiler", "Textbook Exercises"],
+      system_design: ["Study schedule", "Code practice exercises"],
+      technology_stack: ["C++", "G++ Compiler"],
+      facts: [
+        { fact: "Abstract classes require at least one pure virtual function", type: "study", priority: 1 },
+        { fact: "Virtual destructors prevent memory leaks during deletion of derived objects", type: "study", priority: 1 },
+        { fact: "Copy constructor must take reference parameter to avoid infinite recursion", type: "study", priority: 1 }
+      ],
+      state: {
+        currentStep: "Reviewing dynamic memory allocation in constructors",
+        nextStep: "Mock exam practice",
+        completed: ["Read Chapter 4 on Polymorphism"],
+        inProgress: ["Dynamic memory review"],
+        blockedBy: []
+      },
+      decisions: [
+        "Focus study on virtual tables and pointer lookup overhead."
+      ],
+      documents: [
+        { title: "Week_5.pdf", summary: "Slides covering classes and objects.", concepts: ["Encapsulation", "Constructor", "Objects", "Classes"] }
+      ]
+    },
+    "hospital-priority-system": {
+      projectName: "Hospital Priority System",
+      projectType: "software",
+      purpose: "Develop triage routing software for emergency rooms.",
+      finalObjective: "Decrease average patient wait times for critical issues.",
+      major_components: ["React Frontend", "Express Backend", "MongoDB"],
+      system_design: ["Triage sorting queue", "Real-time updates websocket"],
+      technology_stack: ["JavaScript", "React", "Node.js", "MongoDB"],
+      facts: [
+        { fact: "Patients sorted dynamically using a min-heap based on severity score", type: "software", priority: 1 },
+        { fact: "Triage level 1 corresponds to immediate resuscitation", type: "software", priority: 1 },
+        { fact: "Severity score recalculated every 5 minutes for waiting list", type: "software", priority: 1 }
+      ],
+      state: {
+        currentStep: "Integrating priority queue API endpoints",
+        nextStep: "Performance testing triage reassessment interval",
+        completed: ["Mock patient schema", "Basic routing layout"],
+        inProgress: ["Integrating heap algorithm"],
+        blockedBy: []
+      },
+      decisions: [
+        "Use min-heap over standard array sorting for O(log N) insertion performance."
+      ],
+      documents: [
+        { title: "Triage_Protocol.pdf", summary: "Standard triage protocol guidelines.", concepts: ["Priority Scoring", "Resource Allocation", "Min-Heap Sort", "Re-evaluation Frequency"] }
+      ]
+    }
+  };
+
+  let selectedProject = null;
+  let allCombinedProjects = [];
+
+  function loadDashboard() {
+    if (!isChromeContextValid()) return;
+    
+    chrome.runtime.sendMessage({ action: "getDashboardData" }, function(response) {
+      if (response && response.success) {
+        // Merge with MOCK_PROJECTS
+        const dbProjects = response.projects || [];
+        const mergedList = [...dbProjects];
+        
+        // Find missing mock projects
+        Object.keys(MOCK_PROJECTS).forEach(key => {
+          const mock = MOCK_PROJECTS[key];
+          const exists = dbProjects.some(p => p.projectName.toLowerCase() === mock.projectName.toLowerCase());
+          if (!exists) {
+            mergedList.push({
+              id: key,
+              projectName: mock.projectName,
+              purpose: mock.purpose,
+              finalObjective: mock.finalObjective,
+              projectType: mock.projectType,
+              major_components: mock.major_components,
+              system_design: mock.system_design,
+              technology_stack: mock.technology_stack,
+              facts: mock.facts,
+              state: mock.state,
+              decisions: mock.decisions,
+              documents: mock.documents,
+              updatedAt: new Date().toISOString(),
+              isMock: true
+            });
+          }
+        });
+        
+        allCombinedProjects = mergedList;
+        
+        // Update stats
+        let totalDocs = response.stats.documents;
+        let totalFacts = response.stats.facts;
+        
+        allCombinedProjects.forEach(p => {
+          if (p.isMock) {
+            totalDocs += (p.documents || []).length;
+            totalFacts += (p.facts || []).length;
+          }
+        });
+        
+        const projectsEl = document.getElementById("dash-stat-projects");
+        const docsEl = document.getElementById("dash-stat-documents");
+        const factsEl = document.getElementById("dash-stat-facts");
+        const capsEl = document.getElementById("dash-stat-capsules");
+        
+        if (projectsEl) projectsEl.innerText = allCombinedProjects.length;
+        if (docsEl) docsEl.innerText = totalDocs;
+        if (factsEl) factsEl.innerText = totalFacts;
+        if (capsEl) capsEl.innerText = response.stats.capsules;
+        
+        renderRecentProjectsList(allCombinedProjects);
+      } else {
+        console.warn("Failed to load dashboard data:", response ? response.error : "Unknown error");
+      }
+    });
+  }
+  window.loadDashboard = loadDashboard; // Expose globally just in case
+
+  function renderRecentProjectsList(projects) {
+    const listEl = document.getElementById("recentProjectsList");
+    if (!listEl) return;
+    
+    if (projects.length === 0) {
+      listEl.innerHTML = '<div class="empty-state">No projects found.</div>';
+      return;
+    }
+    
+    listEl.innerHTML = projects.map(p => {
+      const formattedDate = new Date(p.updatedAt).toLocaleDateString();
+      return `
+        <div class="project-list-item" data-id="${p.id}" style="
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 8px 10px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div style="max-width: 85%;">
+            <div style="font-size: 11px; font-weight: 600; color: #fff; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${p.projectName}</div>
+            <div style="font-size: 9px; color: var(--text-muted); margin-top: 2px;">
+              ${p.projectType.toUpperCase()} • ${formattedDate}
+            </div>
+          </div>
+          <div style="font-size: 10px; color: var(--primary);">➔</div>
+        </div>
+      `;
+    }).join("");
+    
+    listEl.querySelectorAll(".project-list-item").forEach(item => {
+      item.addEventListener("click", function() {
+        listEl.querySelectorAll(".project-list-item").forEach(i => {
+          i.style.borderColor = "var(--border)";
+          i.style.background = "var(--card-bg)";
+        });
+        item.style.borderColor = "var(--primary)";
+        item.style.background = "rgba(0, 255, 204, 0.04)";
+        
+        const projectId = item.getAttribute("data-id");
+        selectedProject = allCombinedProjects.find(p => p.id === projectId);
+        
+        const container = document.getElementById("projectActionContainer");
+        const activeName = document.getElementById("activeProjectName");
+        
+        if (selectedProject && container && activeName) {
+          activeName.innerText = selectedProject.projectName;
+          container.style.display = "block";
+        }
+      });
+    });
+  }
+
+  // Dashboard Button Handlers
+  const closeProjectActions = document.getElementById("closeProjectActions");
+  if (closeProjectActions) {
+    closeProjectActions.addEventListener("click", function() {
+      const container = document.getElementById("projectActionContainer");
+      if (container) container.style.display = "none";
+      const listEl = document.getElementById("recentProjectsList");
+      if (listEl) {
+        listEl.querySelectorAll(".project-list-item").forEach(i => {
+          i.style.borderColor = "var(--border)";
+          i.style.background = "var(--card-bg)";
+        });
+      }
+      selectedProject = null;
+    });
+  }
+
+  const btnViewMemory = document.getElementById("btnViewMemory");
+  if (btnViewMemory) {
+    btnViewMemory.addEventListener("click", function() {
+      if (!selectedProject) return;
+      const modal = document.getElementById("dashboardDetailsModal");
+      const title = document.getElementById("modalDetailTitle");
+      const content = document.getElementById("modalDetailContent");
+      if (!modal || !title || !content) return;
+      
+      title.innerText = "Project Memory: " + selectedProject.projectName;
+      
+      let factsHtml = "No facts recorded.";
+      if (Array.isArray(selectedProject.facts) && selectedProject.facts.length > 0) {
+        factsHtml = `<ul style="margin: 0; padding-left: 14px; display:flex; flex-direction:column; gap:4px;">
+          ${selectedProject.facts.map(f => `
+            <li>
+              <span style="font-weight:600; color:${f.priority === 1 ? 'var(--primary)' : 'var(--text)'};">${f.fact || f.value || f}</span> 
+              <span style="font-size:8px; color:var(--text-muted); text-transform:uppercase;">[${f.type || 'fact'}]</span>
+            </li>
+          `).join("")}
+        </ul>`;
+      }
+      
+      let decisionsHtml = "No decisions recorded.";
+      const decisionsList = selectedProject.decisions || selectedProject.user_decisions || [];
+      if (Array.isArray(decisionsList) && decisionsList.length > 0) {
+        decisionsHtml = `<ul style="margin: 0; padding-left: 14px; display:flex; flex-direction:column; gap:3px;">
+          ${decisionsList.map(d => `<li>${d}</li>`).join("")}
+        </ul>`;
+      }
+      
+      let stateHtml = "No active state recorded.";
+      if (selectedProject.state) {
+        const state = selectedProject.state;
+        stateHtml = `
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div><span style="color:var(--primary); font-weight:600;">Current:</span> ${state.currentStep || "None"}</div>
+            <div><span style="color:var(--secondary); font-weight:600;">Next:</span> ${state.nextStep || "None"}</div>
+            <div><span style="color:var(--text-muted); font-weight:600;">Completed:</span> ${Array.isArray(state.completed) ? state.completed.join(", ") : "None"}</div>
+          </div>
+        `;
+      }
+      
+      content.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px; padding-bottom: 20px;">
+          <div>
+            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Purpose</div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${selectedProject.purpose || "No purpose specified."}</div>
+          </div>
+          <div>
+            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Final Objective</div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${selectedProject.finalObjective || "No final objective specified."}</div>
+          </div>
+          <div>
+            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Architecture Stack</div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px; display:flex; flex-direction:column; gap:3px;">
+              <div><b>Components:</b> ${Array.isArray(selectedProject.major_components) ? selectedProject.major_components.join(", ") : "None"}</div>
+              <div><b>System Design:</b> ${Array.isArray(selectedProject.system_design) ? selectedProject.system_design.join(", ") : "None"}</div>
+              <div><b>Tech Stack:</b> ${Array.isArray(selectedProject.technology_stack) ? selectedProject.technology_stack.join(", ") : "None"}</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">State Tracker</div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${stateHtml}</div>
+          </div>
+          <div>
+            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Facts</div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${factsHtml}</div>
+          </div>
+          <div>
+            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Decisions</div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${decisionsHtml}</div>
+          </div>
+        </div>
+      `;
+      modal.style.display = "flex";
+    });
+  }
+
+  const btnViewDocuments = document.getElementById("btnViewDocuments");
+  if (btnViewDocuments) {
+    btnViewDocuments.addEventListener("click", function() {
+      if (!selectedProject) return;
+      const modal = document.getElementById("dashboardDetailsModal");
+      const title = document.getElementById("modalDetailTitle");
+      const content = document.getElementById("modalDetailContent");
+      if (!modal || !title || !content) return;
+      
+      title.innerText = "Project Documents: " + selectedProject.projectName;
+      
+      let docsHtml = '<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:12px;">No documents attached to this project.</div>';
+      if (Array.isArray(selectedProject.documents) && selectedProject.documents.length > 0) {
+        docsHtml = selectedProject.documents.map(d => {
+          const concepts = d.concepts || [];
+          return `
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; padding:8px; margin-bottom:10px;">
+              <div style="font-weight:700; font-size:11px; color:#fff; margin-bottom:2px;">${d.title || d.filename}</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px; line-height:1.3;">${d.summary || "No summary generated."}</div>
+              <div style="font-size:9px; color:var(--primary); font-weight:600; text-transform:uppercase; margin-bottom:2px;">Concepts:</div>
+              <ul style="margin:0; padding-left:12px; font-size:10px; color:#e5e7eb; line-height:1.3;">
+                ${concepts.map(c => `<li>${c}</li>`).join("")}
+              </ul>
+            </div>
+          `;
+        }).join("");
+      }
+      
+      content.innerHTML = `
+        <div style="padding-bottom: 20px;">
+          ${docsHtml}
+        </div>
+      `;
+      modal.style.display = "flex";
+    });
+  }
+
+  const btnGenerateCapsule = document.getElementById("btnGenerateCapsule");
+  if (btnGenerateCapsule) {
+    btnGenerateCapsule.addEventListener("click", function() {
+      if (!selectedProject) return;
+      
+      btnGenerateCapsule.disabled = true;
+      btnGenerateCapsule.innerText = "Generating...";
+      
+      const keyTitle = selectedProject.projectName.toUpperCase().replace(/[^A-Z0-9]/g, '-');
+      const capsule = {
+        id: 'CAP-' + Date.now(),
+        title: selectedProject.projectName + " Context",
+        key: `@CAP-${keyTitle}`,
+        created_at: new Date().toISOString(),
+        platform: "Extension Dashboard",
+        project: selectedProject.projectName,
+        project_type: selectedProject.projectType || "software",
+        project_purpose: selectedProject.purpose || "",
+        final_objective: selectedProject.finalObjective || "",
+        major_components: selectedProject.major_components || [],
+        system_design: selectedProject.system_design || [],
+        technology_stack: selectedProject.technology_stack || [],
+        completed: selectedProject.state ? (selectedProject.state.completed || []) : [],
+        in_progress: selectedProject.state ? (selectedProject.state.inProgress || []) : [],
+        current_step: selectedProject.state ? (selectedProject.state.currentStep || "") : "",
+        next_step: selectedProject.state ? (selectedProject.state.nextStep || "") : "",
+        blocked_by: selectedProject.state ? (selectedProject.state.blockedBy || []) : [],
+        hard_facts: Array.isArray(selectedProject.facts) ? selectedProject.facts.map(f => f.fact || f.value || f) : [],
+        stored_facts: Array.isArray(selectedProject.facts) ? selectedProject.facts : [],
+        user_decisions: selectedProject.decisions || selectedProject.user_decisions || [],
+        document_context: {
+          documents_present: Array.isArray(selectedProject.documents) && selectedProject.documents.length > 0,
+          documents: selectedProject.documents || []
+        }
+      };
+      
+      chrome.runtime.sendMessage({ action: "saveCapsule", capsule: capsule }, function(res) {
+        btnGenerateCapsule.disabled = false;
+        btnGenerateCapsule.innerText = "Generate Capsule";
+        
+        if (res && res.success) {
+          navigator.clipboard.writeText(JSON.stringify(capsule, null, 2)).then(() => {
+            alert(`✅ Capsule successfully generated for ${selectedProject.projectName}!\n\nTransport JSON copied to clipboard.`);
+          }).catch(() => {
+            alert(`✅ Capsule successfully generated for ${selectedProject.projectName}!`);
+          });
+          loadDashboard();
+        } else {
+          alert("❌ Failed to save capsule: " + (res ? res.error : "Unknown error"));
+        }
+      });
+    });
+  }
+
+  const closeDetailModal = document.getElementById("closeDetailModal");
+  if (closeDetailModal) {
+    closeDetailModal.addEventListener("click", function() {
+      const modal = document.getElementById("dashboardDetailsModal");
+      if (modal) modal.style.display = "none";
+    });
+  }
 
 });
