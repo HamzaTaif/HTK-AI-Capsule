@@ -14,8 +14,30 @@ export function initAuthUI(onAuthSuccess) {
     dashboard: document.getElementById('dashboardScreen')
   };
 
+  let isAuthSynced = false;
+  chrome.storage.local.get(['synapse_auth_status'], (result) => {
+    isAuthSynced = !!result.synapse_auth_status;
+    if (isAuthSynced) {
+      showScreen('dashboard');
+    } else {
+      showScreen('auth');
+    }
+  });
+
+  // Listen to chrome storage changes to sync login/logout state instantly
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'local' && changes.synapse_auth_status !== undefined) {
+      isAuthSynced = !!changes.synapse_auth_status.newValue;
+      if (isAuthSynced) {
+        showScreen('dashboard');
+      } else {
+        showScreen('auth');
+      }
+    }
+  });
+
   function showScreen(screenId) {
-    if (!getCurrentUser() && screenId !== 'auth') {
+    if (!isAuthSynced && screenId !== 'auth') {
       screenId = 'auth';
     }
     Object.values(screens).forEach(s => {
@@ -175,12 +197,25 @@ export function initAuthUI(onAuthSuccess) {
     });
   }
 
+  // Launch Auth Web Portal
+  const btnLaunchAuth = document.getElementById('btnLaunchAuth');
+  if (btnLaunchAuth) {
+    btnLaunchAuth.addEventListener('click', () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") });
+      window.close();
+    });
+  }
+
   // Logout
   const navLogoutBtn = document.getElementById('navLogoutBtn');
   if (navLogoutBtn) {
     navLogoutBtn.addEventListener('click', async () => {
-      await logoutUser();
-      profileDropdown.classList.remove('show');
+      chrome.storage.local.set({ synapse_auth_status: false, synapse_auth_user: null }, async () => {
+        await logoutUser();
+        if (profileDropdown) profileDropdown.classList.remove('show');
+        chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") });
+        window.close();
+      });
     });
   }
 

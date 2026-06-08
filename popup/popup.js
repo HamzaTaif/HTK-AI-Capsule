@@ -1,6 +1,6 @@
 /* jshint esversion: 8 */
 import { 
-  auth, db, collection, doc, setDoc, deleteDoc, query, where, getDocs 
+  auth, db, collection, doc, setDoc, deleteDoc, query, where, getDocs, serverTimestamp 
 } from "./firebase.js";
 import { initAuthUI } from "./auth-ui.js";
 
@@ -83,7 +83,7 @@ function buildVaultItemHTML(docItem) {
   } else if (docItem.charCount > 100) {
     statusText = "✓ " + Math.round(docItem.charCount / 1000 * 10) / 10 + "k chars · " + (docItem.source === "intercepted" ? "🔵 auto-captured" : "📤 vault");
   } else {
-    statusText = "⚠️ empty — try re-adding";
+    statusText = "⚠️ empty - try re-adding";
   }
 
   return '<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 2px; border-bottom:1px solid #1a1a1a;">' +
@@ -91,7 +91,7 @@ function buildVaultItemHTML(docItem) {
          '<span style="font-size:11px; color:#ccc;">' + icon + " " + safeAttr(shortTitle) + '</span>' +
          '<div style="font-size:9px; margin-top:1px; color:' + statusColor + ';">' + statusText + '</div>' +
          '</div>' +
-         '<button class="removeDocBtn" data-source="' + safeAttr(docItem.source || "vault") + '" data-title="' + safeAttr(docItem.title) + '" style="background:transparent; border:none; color:#444; cursor:pointer; font-size:13px; padding:0 4px;">✕</button>' +
+         '<button class="removeDocBtn" data-source="' + safeAttr(docItem.source || "vault") + '" data-title="' + safeAttr(docItem.title) + '" style="background:transparent; border:none; color:#444; cursor:pointer; font-size:13px; padding:0 4px;">×</button>' +
          '</div>';
 }
 
@@ -158,7 +158,7 @@ function removeDoc(source, title) {
     });
     const user = auth.currentUser;
     if (user && docToDelete && docToDelete.id) {
-       deleteDoc(doc(db, "vault", docToDelete.id)).catch(function(e) { console.error("Cloud vault delete error", e); });
+        deleteDoc(doc(db, "vault", docToDelete.id)).catch(function(e) { console.error("Firestore failure at popup.js -> removeDoc (cloud vault delete):", e); });
     }
   } else {
     safeStorageGet(["synapse_intercepted"], function(result) {
@@ -203,10 +203,10 @@ async function extractPDFFromFile(file) {
       const content = await page.getTextContent();
       fullText += content.items.map(function(item) { return item.str; }).join(" ") + "\n";
     }
-    return fullText;
+    return { text: fullText, pageCount: pdf.numPages };
   } catch (e) {
     console.warn("Synapse Vault: PDF extraction failed:", e);
-    return "[PDF text extraction failed: " + e.message + "]";
+    return { text: "[PDF text extraction failed: " + e.message + "]", pageCount: 0 };
   }
 }
 
@@ -230,6 +230,23 @@ async function extractDOCXFromFile(file) {
   }
 }
 
+function promiseWithTimeout(promise, timeoutMs, timeoutError) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(timeoutError || new Error("Timeout exceeded")), timeoutMs);
+  });
+  return Promise.race([
+    promise,
+    timeoutPromise
+  ]).then((result) => {
+    clearTimeout(timeoutId);
+    return result;
+  }, (error) => {
+    clearTimeout(timeoutId);
+    throw error;
+  });
+}
+
 async function processVaultFiles(fileList) {
   for (const file of fileList) {
     if (vaultDocs.find(function(d) { return d.title === file.name; })) continue;
@@ -251,23 +268,48 @@ async function processVaultFiles(fileList) {
     let extractedText = "";
     let summary = "";
     let concepts = [];
+    let facts = [];
+    let pageCount = 1;
     try {
       if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
-        extractedText = await extractPDFFromFile(file);
         try {
-          const response = await new Promise(resolve => {
-            chrome.runtime.sendMessage({
-              action: 'processPDF',
-              filename: file.name,
-              text: extractedText
-            }, resolve);
-          });
-          if (response && response.success && response.doc) {
-            summary = response.doc.summary;
-            concepts = response.doc.concepts;
-          }
-        } catch (err) {
-          console.warn("Failed to process PDF in background:", err);
+          const pdfData = await promiseWithTimeout((async () => {
+            const pdfResult = await extractPDFFromFile(file);
+            const raw = typeof pdfResult === "object" ? pdfResult.text : pdfResult;
+            const pCount = typeof pdfResult === "object" ? pdfResult.pageCount : 1;
+            let sum = "";
+            let concs = [];
+            let fts = [];
+            try {
+              const response = await promiseWithTimeout(new Promise(resolve => {
+                chrome.runtime.sendMessage({
+                  action: 'processPDF',
+                  filename: file.name,
+                  text: raw,
+                  pageCount: pCount,
+                  projectName: selectedProject ? selectedProject.projectName : "Default Project"
+                }, resolve);
+              }), 12000, new Error("Background process timeout"));
+              if (response && response.success && response.doc) {
+                sum = response.doc.summary;
+                concs = response.doc.concepts;
+                fts = response.doc.facts || [];
+              }
+            } catch (bgErr) {
+              console.warn("Failed or timed out to process PDF in background:", bgErr);
+            }
+            return { raw: raw, summary: sum, concepts: concs, facts: fts, pageCount: pCount };
+          })(), 15000, new Error("PDF processing timeout"));
+          
+          extractedText = pdfData.raw;
+          summary = pdfData.summary;
+          concepts = pdfData.concepts;
+          facts = pdfData.facts;
+          pageCount = pdfData.pageCount;
+        } catch (timeoutErr) {
+          console.warn("PDF processing timed out or failed:", timeoutErr);
+          extractedText = "[PDF processing unavailable: " + timeoutErr.message + "]";
+          alert("PDF could not be processed.");
         }
       } else if (file.name.endsWith(".docx") || file.name.endsWith(".doc")) {
         extractedText = await extractDOCXFromFile(file);
@@ -291,6 +333,8 @@ async function processVaultFiles(fileList) {
       vaultDocs[idx].status = extractedText.length > 50 ? "ready" : "empty";
       if (summary) vaultDocs[idx].summary = summary;
       if (concepts && concepts.length > 0) vaultDocs[idx].concepts = concepts;
+      if (facts && facts.length > 0) vaultDocs[idx].facts = facts;
+      vaultDocs[idx].pageCount = pageCount;
     }
 
     safeStorageSet({ synapse_vault: vaultDocs });
@@ -306,7 +350,7 @@ async function processVaultFiles(fileList) {
 }
 
 function logVaultSaveError(e) {
-  console.error("Cloud vault save error:", e);
+  console.error("Firestore failure at popup.js -> processVaultFiles (cloud vault save):", e);
 }
 
 // 5. Document selector modal functions
@@ -352,7 +396,7 @@ function showDocumentSelector(docs) {
   
   htmlParts.push('</div>');
   htmlParts.push('<div style="display:flex; gap:8px;">');
-  htmlParts.push('<button id="skipDocsBtn" style="flex:1; background:transparent; border:1px solid #333; color:#666; border-radius:6px; padding:8px; font-size:11px; cursor:pointer;">Skip — No Docs</button>');
+  htmlParts.push('<button id="skipDocsBtn" style="flex:1; background:transparent; border:1px solid #333; color:#666; border-radius:6px; padding:8px; font-size:11px; cursor:pointer;">Skip - No Docs</button>');
   htmlParts.push('<button id="confirmDocsBtn" style="flex:2; background:#7c5cfc; border:none; color:#fff; border-radius:6px; padding:8px; font-size:11px; font-weight:600; cursor:pointer;">Generate Capsule ✓</button>');
   htmlParts.push('</div>');
 
@@ -453,7 +497,7 @@ function deleteCapsule(id) {
           console.log("Capsule deleted from cloud.");
           loadCapsules();
         }).catch(function(error) {
-          console.error("Error deleting from cloud:", error);
+          console.error("Firestore failure at popup.js -> deleteCapsule:", error);
           loadCapsules();
         });
       } else {
@@ -478,7 +522,7 @@ function uploadLocalCapsulesToCloud(user) {
         setDoc(docRef, capsule).then(function() {
           console.log("Synapse AI [Popup]: Successfully backed up local capsule:", capsule.id);
         }).catch(function(err) {
-          console.error("Synapse AI [Popup]: Error backing up capsule:", capsule.id, err);
+          console.error("Firestore failure at popup.js -> uploadLocalCapsulesToCloud:", err);
         });
       }
     });
@@ -522,7 +566,10 @@ function syncWithCloud(user, callback) {
       });
     });
   }).catch(function(error) {
-    console.error("Firestore sync error in popup:", error);
+    console.error("Firestore failure at popup.js -> syncWithCloud:", error);
+    if (error.code === 'unavailable' || error.message.includes("offline") || error.message.includes("unavailable") || error.message.includes("Could not reach Cloud Firestore")) {
+      updateOfflineStatus(true, "Could not reach database");
+    }
     if (callback) callback();
   });
 }
@@ -546,7 +593,7 @@ function uploadLocalVaultToCloud(user) {
         setDoc(docRef, vaultDoc).then(function() {
           console.log("Synapse AI [Popup]: Successfully backed up vault doc:", vaultDoc.title);
         }).catch(function(err) {
-          console.error("Synapse AI [Popup]: Error backing up vault doc:", vaultDoc.title, err);
+          console.error("Firestore failure at popup.js -> uploadLocalVaultToCloud:", err);
         });
       }
     });
@@ -590,7 +637,10 @@ function syncVaultWithCloud(user, callback) {
       });
     });
   }).catch(function(error) {
-    console.error("Firestore vault sync error:", error);
+    console.error("Firestore failure at popup.js -> syncVaultWithCloud:", error);
+    if (error.code === 'unavailable' || error.message.includes("offline") || error.message.includes("unavailable") || error.message.includes("Could not reach Cloud Firestore")) {
+      updateOfflineStatus(true, "Could not reach database");
+    }
     if (callback) callback();
   });
 }
@@ -657,6 +707,21 @@ async function runCapsuleGeneration(selectedDocs) {
   }
 }
 
+function updateOfflineStatus(isOffline, reason) {
+  const banner = document.getElementById("offlineBanner");
+  if (!banner) return;
+  if (isOffline) {
+    banner.style.display = "flex";
+    if (reason) {
+      banner.querySelector("span:last-child").innerText = "Firestore is offline (" + reason + "). Memory sync & capsule generation are suspended.";
+    } else {
+      banner.querySelector("span:last-child").innerText = "Firestore is offline. Memory sync & capsule generation are suspended.";
+    }
+  } else {
+    banner.style.display = "none";
+  }
+}
+
 // 8. Event listeners at bottom (DOMContentLoaded wrapper)
 document.addEventListener("DOMContentLoaded", function() {
   capsuleListEl = document.getElementById("capsuleList");
@@ -664,6 +729,17 @@ document.addEventListener("DOMContentLoaded", function() {
   const statusText = document.getElementById("statusText");
   const generateBtn = document.getElementById("generateBtn");
   const tutorialSection = document.getElementById("tutorialSection");
+
+  window.addEventListener("online", function() {
+    updateOfflineStatus(false);
+  });
+  window.addEventListener("offline", function() {
+    updateOfflineStatus(true, "Browser is offline");
+  });
+  
+  if (!navigator.onLine) {
+    updateOfflineStatus(true, "Browser is offline");
+  }
 
 
 
@@ -799,7 +875,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
       }
 
-      // Rescan button — triggers full historical backfill on active tab
+      // Rescan button - triggers full historical backfill on active tab
       const rescanBtn = document.getElementById("rescanBtn");
       if (rescanBtn) {
         rescanBtn.style.display = "block";
@@ -808,9 +884,9 @@ document.addEventListener("DOMContentLoaded", function() {
             if (!tabs[0]) return;
             chrome.tabs.sendMessage(tabs[0].id, { action: "forceRescan" }, function(response) {
               if (chrome.runtime.lastError) {
-                rescanBtn.textContent = "✗ Could not reach page";
+                rescanBtn.textContent = "X Could not reach page";
               } else {
-                rescanBtn.textContent = "✓ Rescan triggered — check console";
+                rescanBtn.textContent = "✓ Rescan triggered - check console";
                 rescanBtn.style.color = "#00ffcc";
                 rescanBtn.style.borderColor = "#00ffcc";
               }
@@ -970,11 +1046,18 @@ document.addEventListener("DOMContentLoaded", function() {
         if (projectsEl) projectsEl.innerText = allCombinedProjects.length;
         if (docsEl) docsEl.innerText = totalDocs;
         if (factsEl) factsEl.innerText = totalFacts;
-        if (capsEl) capsEl.innerText = response.stats.capsules;
+        
+        const count = response.stats.capsules;
+        console.log("Dashboard loaded capsules:", count);
+        if (capsEl) capsEl.innerText = count;
         
         renderRecentProjectsList(allCombinedProjects);
       } else {
         console.warn("Failed to load dashboard data:", response ? response.error : "Unknown error");
+        const errMsg = response ? (response.error || "") : "";
+        if (errMsg.includes("offline") || errMsg.includes("unavailable") || errMsg.includes("Could not reach Cloud Firestore") || !navigator.onLine) {
+          updateOfflineStatus(true, "Could not reach database");
+        }
       }
     });
   }
@@ -1065,70 +1148,261 @@ document.addEventListener("DOMContentLoaded", function() {
       
       title.innerText = "Project Memory: " + selectedProject.projectName;
       
-      let factsHtml = "No facts recorded.";
-      if (Array.isArray(selectedProject.facts) && selectedProject.facts.length > 0) {
-        factsHtml = `<ul style="margin: 0; padding-left: 14px; display:flex; flex-direction:column; gap:4px;">
-          ${selectedProject.facts.map(f => `
-            <li>
-              <span style="font-weight:600; color:${f.priority === 1 ? 'var(--primary)' : 'var(--text)'};">${f.fact || f.value || f}</span> 
-              <span style="font-size:8px; color:var(--text-muted); text-transform:uppercase;">[${f.type || 'fact'}]</span>
-            </li>
-          `).join("")}
-        </ul>`;
-      }
+      // Keep working copies
+      let facts = (selectedProject.facts || []).map(f => ({
+        fact: f.fact || f.value || (typeof f === 'string' ? f : ""),
+        type: f.type || "other",
+        priority: f.priority || 2
+      }));
+      let decisions = [...(selectedProject.decisions || selectedProject.user_decisions || [])].map(d => typeof d === 'object' ? (d.decision || d.value || "") : d);
       
-      let decisionsHtml = "No decisions recorded.";
-      const decisionsList = selectedProject.decisions || selectedProject.user_decisions || [];
-      if (Array.isArray(decisionsList) && decisionsList.length > 0) {
-        decisionsHtml = `<ul style="margin: 0; padding-left: 14px; display:flex; flex-direction:column; gap:3px;">
-          ${decisionsList.map(d => `<li>${d}</li>`).join("")}
-        </ul>`;
-      }
-      
-      let stateHtml = "No active state recorded.";
-      if (selectedProject.state) {
-        const state = selectedProject.state;
-        stateHtml = `
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            <div><span style="color:var(--primary); font-weight:600;">Current:</span> ${state.currentStep || "None"}</div>
-            <div><span style="color:var(--secondary); font-weight:600;">Next:</span> ${state.nextStep || "None"}</div>
-            <div><span style="color:var(--text-muted); font-weight:600;">Completed:</span> ${Array.isArray(state.completed) ? state.completed.join(", ") : "None"}</div>
+      function renderEditor() {
+        let stateHtml = "No active state recorded.";
+        if (selectedProject.state) {
+          const state = selectedProject.state;
+          stateHtml = `
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <div><span style="color:var(--primary); font-weight:600;">Current:</span> ${state.currentStep || "None"}</div>
+              <div><span style="color:var(--secondary); font-weight:600;">Next:</span> ${state.nextStep || "None"}</div>
+              <div><span style="color:var(--text-muted); font-weight:600;">Completed:</span> ${Array.isArray(state.completed) ? state.completed.join(", ") : "None"}</div>
+            </div>
+          `;
+        }
+        
+        content.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:12px; padding-bottom: 20px;">
+            <div>
+              <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Purpose</div>
+              <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${selectedProject.purpose || "No purpose specified."}</div>
+            </div>
+            <div>
+              <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Final Objective</div>
+              <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${selectedProject.finalObjective || "No final objective specified."}</div>
+            </div>
+            <div>
+              <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Architecture Stack</div>
+              <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px; display:flex; flex-direction:column; gap:3px;">
+                <div><b>Components:</b> ${Array.isArray(selectedProject.major_components) ? selectedProject.major_components.join(", ") : "None"}</div>
+                <div><b>System Design:</b> ${Array.isArray(selectedProject.system_design) ? selectedProject.system_design.join(", ") : "None"}</div>
+                <div><b>Tech Stack:</b> ${Array.isArray(selectedProject.technology_stack) ? selectedProject.technology_stack.join(", ") : "None"}</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">State Tracker</div>
+              <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${stateHtml}</div>
+            </div>
+            
+            <!-- Facts Section -->
+            <div>
+              <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                <span>Granular Facts (${facts.length})</span>
+                <button id="btn-dash-add-fact" style="background:var(--primary); border:none; color:#121218; font-size:9px; font-weight:700; padding:2px 6px; border-radius:3px; cursor:pointer;">+ Add Fact</button>
+              </div>
+              <div id="dash-facts-list" style="display:flex; flex-direction:column; gap:6px;">
+                ${facts.map((f, idx) => `
+                  <div style="display:flex; gap:4px; align-items:center; background:rgba(255,255,255,0.01); border:1px solid var(--border); padding:4px; border-radius:4px;">
+                    <input type="text" class="dash-fact-type-input" data-index="${idx}" value="${f.type}" style="width:75px; font-size:10px; background:rgba(0,0,0,0.3); border:1px solid var(--border); color:#fff; padding:2px; border-radius:3px;" placeholder="Type">
+                    <input type="text" class="dash-fact-val-input" data-index="${idx}" value="${f.fact.replace(/"/g, '&quot;')}" style="flex:1; font-size:10px; background:rgba(0,0,0,0.3); border:1px solid var(--border); color:#fff; padding:2px; border-radius:3px;" placeholder="Fact value">
+                    <select class="dash-fact-priority-input" data-index="${idx}" style="font-size:10px; background:rgba(0,0,0,0.3); border:1px solid var(--border); color:#fff; padding:2px; border-radius:3px; width:45px;">
+                      <option value="1" ${f.priority === 1 ? 'selected' : ''}>P1</option>
+                      <option value="2" ${f.priority === 2 ? 'selected' : ''}>P2</option>
+                      <option value="3" ${f.priority === 3 ? 'selected' : ''}>P3</option>
+                    </select>
+                    <button class="btn-dash-del-fact" data-index="${idx}" style="background:none; border:none; color:var(--error); cursor:pointer; font-size:11px; padding: 2px 4px;">×</button>
+                  </div>
+                `).join("") || '<div style="font-size:10px; color:var(--text-muted); padding:4px;">No facts recorded.</div>'}
+              </div>
+            </div>
+            
+            <!-- Decisions Section -->
+            <div>
+              <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                <span>Decisions (${decisions.length})</span>
+                <button id="btn-dash-add-decision" style="background:var(--primary); border:none; color:#121218; font-size:9px; font-weight:700; padding:2px 6px; border-radius:3px; cursor:pointer;">+ Add Decision</button>
+              </div>
+              <div id="dash-decisions-list" style="display:flex; flex-direction:column; gap:6px;">
+                ${decisions.map((d, idx) => `
+                  <div style="display:flex; gap:4px; align-items:center; background:rgba(255,255,255,0.01); border:1px solid var(--border); padding:4px; border-radius:4px;">
+                    <input type="text" class="dash-decision-val-input" data-index="${idx}" value="${d.replace(/"/g, '&quot;')}" style="flex:1; font-size:10px; background:rgba(0,0,0,0.3); border:1px solid var(--border); color:#fff; padding:2px; border-radius:3px;" placeholder="Decision value">
+                    <button class="btn-dash-del-decision" data-index="${idx}" style="background:none; border:none; color:var(--error); cursor:pointer; font-size:11px; padding: 2px 4px;">×</button>
+                  </div>
+                `).join("") || '<div style="font-size:10px; color:var(--text-muted); padding:4px;">No decisions recorded.</div>'}
+              </div>
+            </div>
+            
+            <button id="btnSaveDashboardMemory" class="btn" style="margin-top:12px; padding:6px; font-size:11px;">Save Changes</button>
           </div>
         `;
+        
+        // Add events
+        content.querySelector("#btn-dash-add-fact").addEventListener("click", function() {
+          facts.push({ fact: "", type: "hardware_pin", priority: 2 });
+          renderEditor();
+        });
+        
+        content.querySelector("#btn-dash-add-decision").addEventListener("click", function() {
+          decisions.push("");
+          renderEditor();
+        });
+        
+        content.querySelectorAll(".dash-fact-type-input").forEach(el => {
+          el.addEventListener("change", function(e) {
+            const idx = parseInt(el.getAttribute("data-index"));
+            facts[idx].type = e.target.value.trim();
+          });
+        });
+        
+        content.querySelectorAll(".dash-fact-val-input").forEach(el => {
+          el.addEventListener("change", function(e) {
+            const idx = parseInt(el.getAttribute("data-index"));
+            facts[idx].fact = e.target.value.trim();
+          });
+        });
+        
+        content.querySelectorAll(".dash-fact-priority-input").forEach(el => {
+          el.addEventListener("change", function(e) {
+            const idx = parseInt(el.getAttribute("data-index"));
+            facts[idx].priority = parseInt(e.target.value);
+          });
+        });
+        
+        content.querySelectorAll(".btn-dash-del-fact").forEach(el => {
+          el.addEventListener("click", function() {
+            const idx = parseInt(el.getAttribute("data-index"));
+            facts.splice(idx, 1);
+            renderEditor();
+          });
+        });
+        
+        content.querySelectorAll(".dash-decision-val-input").forEach(el => {
+          el.addEventListener("change", function(e) {
+            const idx = parseInt(el.getAttribute("data-index"));
+            decisions[idx] = e.target.value.trim();
+          });
+        });
+        
+        content.querySelectorAll(".btn-dash-del-decision").forEach(el => {
+          el.addEventListener("click", function() {
+            const idx = parseInt(el.getAttribute("data-index"));
+            decisions.splice(idx, 1);
+            renderEditor();
+          });
+        });
+        
+        content.querySelector("#btnSaveDashboardMemory").addEventListener("click", async function() {
+          const btn = content.querySelector("#btnSaveDashboardMemory");
+          btn.disabled = true;
+          btn.innerText = "Saving...";
+          
+          try {
+            const user = auth.currentUser;
+            if (!user) throw new Error("User not authenticated");
+            const uid = user.uid;
+            const projectId = selectedProject.id;
+            
+            // Save main project document in Firestore to ensure it's not a broken ref (and to convert mock -> real if needed)
+            await setDoc(doc(db, "users", uid, "projects", projectId), {
+              projectName: selectedProject.projectName,
+              purpose: selectedProject.purpose || "",
+              finalObjective: selectedProject.finalObjective || "",
+              projectType: selectedProject.projectType || "software",
+              major_components: selectedProject.major_components || [],
+              system_design: selectedProject.system_design || [],
+              technology_stack: selectedProject.technology_stack || [],
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+            
+            // 1. Facts
+            // Get original facts list for tracking deletions
+            const originalFacts = selectedProject.facts || [];
+            const originalFactIds = originalFacts.map(f => {
+              const val = (f.fact || f.value || (typeof f === 'string' ? f : "")).trim();
+              return val.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 100);
+            });
+            
+            const newFacts = facts.filter(f => f.fact.trim());
+            const newFactIds = newFacts.map(f => {
+              return f.fact.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 100);
+            });
+            
+            // Delete removed facts
+            for (const oldId of originalFactIds) {
+              if (!newFactIds.includes(oldId) && oldId) {
+                await deleteDoc(doc(db, "users", uid, "projects", projectId, "facts", oldId));
+              }
+            }
+            
+            // Write/Update facts
+            for (const f of newFacts) {
+              const factVal = f.fact.trim();
+              const cleanId = factVal.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 100);
+              let importance = "medium";
+              if (f.priority === 1) importance = "high";
+              else if (f.priority === 3) importance = "low";
+              
+              await setDoc(doc(db, "users", uid, "projects", projectId, "facts", cleanId), {
+                type: f.type || "other",
+                value: factVal,
+                importance: importance,
+                createdAt: serverTimestamp()
+              }, { merge: true });
+            }
+            
+            // 2. Decisions
+            const originalDecisions = selectedProject.decisions || selectedProject.user_decisions || [];
+            const originalDecIds = originalDecisions.map(d => {
+              const val = typeof d === 'object' ? (d.decision || d.value || "") : d;
+              return val.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 100);
+            });
+            
+            const newDecisions = decisions.filter(d => d.trim());
+            const newDecIds = newDecisions.map(d => {
+              return d.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 100);
+            });
+            
+            // Delete removed decisions
+            for (const oldId of originalDecIds) {
+              if (!newDecIds.includes(oldId) && oldId) {
+                await deleteDoc(doc(db, "users", uid, "projects", projectId, "decisions", oldId));
+              }
+            }
+            
+            // Write/Update decisions
+            for (const d of newDecisions) {
+              const decVal = d.trim();
+              const cleanId = decVal.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 100);
+              await setDoc(doc(db, "users", uid, "projects", projectId, "decisions", cleanId), {
+                value: decVal,
+                createdAt: serverTimestamp()
+              }, { merge: true });
+            }
+            
+            // Update local copy
+            selectedProject.facts = newFacts;
+            selectedProject.decisions = newDecisions;
+            if (selectedProject.isMock) {
+              delete selectedProject.isMock;
+            }
+            
+            // Reload dashboard to update counts and list
+            loadDashboard();
+            
+            alert("✅ Project memory successfully saved to Firestore!");
+            modal.style.display = "none";
+          } catch (err) {
+            console.error("Firestore failure at popup.js -> btnSaveDashboardMemory:", err);
+            if (err.code === 'unavailable' || err.message.includes("offline") || err.message.includes("unavailable") || err.message.includes("Could not reach Cloud Firestore")) {
+              updateOfflineStatus(true, "Could not reach database");
+            }
+            alert("❌ Failed to save memory: " + err.message);
+          } finally {
+            btn.disabled = false;
+            btn.innerText = "Save Changes";
+          }
+        });
       }
       
-      content.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:10px; padding-bottom: 20px;">
-          <div>
-            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Purpose</div>
-            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${selectedProject.purpose || "No purpose specified."}</div>
-          </div>
-          <div>
-            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Final Objective</div>
-            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${selectedProject.finalObjective || "No final objective specified."}</div>
-          </div>
-          <div>
-            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Architecture Stack</div>
-            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px; display:flex; flex-direction:column; gap:3px;">
-              <div><b>Components:</b> ${Array.isArray(selectedProject.major_components) ? selectedProject.major_components.join(", ") : "None"}</div>
-              <div><b>System Design:</b> ${Array.isArray(selectedProject.system_design) ? selectedProject.system_design.join(", ") : "None"}</div>
-              <div><b>Tech Stack:</b> ${Array.isArray(selectedProject.technology_stack) ? selectedProject.technology_stack.join(", ") : "None"}</div>
-            </div>
-          </div>
-          <div>
-            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">State Tracker</div>
-            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${stateHtml}</div>
-          </div>
-          <div>
-            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Facts</div>
-            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${factsHtml}</div>
-          </div>
-          <div>
-            <div style="font-size:9px; color:var(--primary); font-weight:700; text-transform:uppercase; margin-bottom:2px;">Decisions</div>
-            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:6px; border-radius:6px;">${decisionsHtml}</div>
-          </div>
-        </div>
-      `;
+      renderEditor();
       modal.style.display = "flex";
     });
   }
@@ -1142,20 +1416,26 @@ document.addEventListener("DOMContentLoaded", function() {
       const content = document.getElementById("modalDetailContent");
       if (!modal || !title || !content) return;
       
-      title.innerText = "Project Documents: " + selectedProject.projectName;
+      title.innerText = "📄 Document Memory: " + selectedProject.projectName;
       
-      let docsHtml = '<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:12px;">No documents attached to this project.</div>';
+      let docsHtml = '<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:20px;">📁 No documents attached to this project.</div>';
       if (Array.isArray(selectedProject.documents) && selectedProject.documents.length > 0) {
         docsHtml = selectedProject.documents.map(d => {
           const concepts = d.concepts || [];
+          const facts = d.facts || [];
+          const name = d.title || d.filename || 'Untitled';
+          const summary = d.summary || '';
+          const charCount = d.charCount ? Math.round(d.charCount / 1000 * 10) / 10 + 'k chars' : '';
+          const isPdf = name.toLowerCase().endsWith('.pdf');
+          const icon = isPdf ? '📄' : '📎';
           return `
-            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; padding:8px; margin-bottom:10px;">
-              <div style="font-weight:700; font-size:11px; color:#fff; margin-bottom:2px;">${d.title || d.filename}</div>
-              <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px; line-height:1.3;">${d.summary || "No summary generated."}</div>
-              <div style="font-size:9px; color:var(--primary); font-weight:600; text-transform:uppercase; margin-bottom:2px;">Concepts:</div>
-              <ul style="margin:0; padding-left:12px; font-size:10px; color:#e5e7eb; line-height:1.3;">
-                ${concepts.map(c => `<li>${c}</li>`).join("")}
-              </ul>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                <div style="font-weight:700; font-size:11px; color:#fff;">${icon} ${name}</div>
+                ${charCount ? `<span style="font-size:9px; color:var(--primary); background:rgba(0,255,204,0.08); padding:1px 6px; border-radius:10px;">${charCount}</span>` : ''}
+              </div>
+              <div style="font-size:10px; color:#9ca3af; margin-bottom:4px;">Type: ${escapeHtml(d.type || d.filetype || 'unknown')}</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px; line-height:1.5; white-space:pre-wrap;">${summary || "Summary unavailable"}</div>
             </div>
           `;
         }).join("");
@@ -1202,7 +1482,14 @@ document.addEventListener("DOMContentLoaded", function() {
         user_decisions: selectedProject.decisions || selectedProject.user_decisions || [],
         document_context: {
           documents_present: Array.isArray(selectedProject.documents) && selectedProject.documents.length > 0,
-          documents: selectedProject.documents || []
+          documents: (selectedProject.documents || []).map(d => ({
+            title: d.title || d.filename || 'Untitled',
+            filename: d.filename || d.title || '',
+            summary: d.summary || '',
+            concepts: d.concepts || [],
+            charCount: d.charCount || 0,
+            key_content: d.compressedText || d.key_content || ''
+          }))
         }
       };
       
@@ -1233,3 +1520,4 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
 });
+

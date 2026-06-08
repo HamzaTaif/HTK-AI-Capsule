@@ -1,0 +1,13 @@
+{
+  "name": "New Platform Adapter Completeness Check",
+  "version": "1.0.0",
+  "description": "When content.js is edited, check that PlatformAdapters and extractRecentMessages() stay consistent — any new platform must have both an adapter entry and an extraction branch.",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["content.js"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "content.js was just edited in Synapse AI Link. If a new LLM platform was added, verify:\n1. PlatformAdapters object has an entry for the new platform with getInputBox(), getSendButton(), and inject(text) methods\n2. extractRecentMessages() has a dedicated branch for the new platform's hostname\n3. getPlatformName() returns a non-'unknown' value for the new hostname\n4. manifest.json host_permissions and content_scripts.matches include the new domain (this requires a separate manifest.json edit)\n5. The injected Synapse button CSS uses !important on all style properties to avoid conflicts with the new platform's styles\nIf no new platform was added, just confirm content.js looks clean."
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Review Firestore Write Operations",
+  "version": "1.0.0",
+  "description": "Before any file write that touches background.js or popup.js, verify Firestore write patterns follow project standards: merge strategy, error logging format, and dual-write requirement for capsule saves.",
+  "when": {
+    "type": "preToolUse",
+    "toolTypes": ["write"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file write is about to happen in the Synapse AI Link project. If this write touches background.js or popup/popup.js, verify:\n1. All setDoc calls to project subcollections use { merge: true } unless it is a full replacement\n2. saveCapsule handler writes to BOTH capsules/{id} (flat) AND users/{uid}/projects/{pid}/capsules/{id} (nested) — both paths must be preserved\n3. Firestore error logging follows the pattern: console.error('Firestore failure at background.js -> handlerName:', error)\n4. getCurrentUserAsync() is used (not auth.currentUser directly) in any service worker function needing the user\nIf none of these concerns apply to the file being written, approve immediately."
+  }
+}

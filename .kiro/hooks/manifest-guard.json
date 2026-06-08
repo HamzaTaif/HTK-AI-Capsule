@@ -1,0 +1,13 @@
+{
+  "name": "Manifest Change Guard",
+  "version": "1.0.0",
+  "description": "When manifest.json is edited, verify the changes don't break extension functionality — permissions, host_permissions, content_scripts, and web_accessible_resources are all critical.",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["manifest.json"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "manifest.json was just edited in the Synapse AI Link extension. Verify the following are still intact:\n1. manifest_version is still 3\n2. background.service_worker is 'background.js' with type 'module'\n3. content_scripts still covers all 5 LLM URLs: chatgpt.com/*, chat.openai.com/*, claude.ai/*, gemini.google.com/*, perplexity.ai/*\n4. host_permissions still includes api.groq.com/*, all *.googleapis.com/*, *.firestore.googleapis.com/*, wss://*.firestore.googleapis.com/*\n5. web_accessible_resources still lists libs/pdf.min.js, libs/pdf.worker.min.js, libs/mammoth.min.js\n6. externally_connectable still allows https://synapse-ai.app/*\nReport any missing or changed critical field."
+  }
+}

@@ -30,6 +30,8 @@
       overflow-x: hidden;
       position: relative;
       min-height: 480px;
+      display: flex;
+      flex-direction: column;
     }
     
     /* ── SCROLLBAR ── */
@@ -223,6 +225,12 @@
 </head>
 <body>
 
+  <!-- Offline / Connection Error Banner -->
+  <div id="offlineBanner" style="display: none; background: #ea580c; color: #fff; font-size: 11px; padding: 6px 12px; font-weight: 600; text-align: center; justify-content: center; align-items: center; gap: 6px; z-index: 1000; position: sticky; top: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+    <span style="font-size: 13px;">⚠️</span>
+    <span>Firestore is offline. Memory sync & capsule generation are suspended.</span>
+  </div>
+
   <!-- ── HEADER ── -->
   <div class="header">
     <h2 class="title">
@@ -240,11 +248,8 @@
 
   <!-- ── DROPDOWN MENU ── -->
   <div id="profileDropdown" class="dropdown-menu">
-    <button class="dropdown-item nav-btn" data-target="dashboardScreen">🏠 Dashboard</button>
-    <button class="dropdown-item nav-btn" data-target="mainAppScreen">💾 Saved Synapses</button>
     <button class="dropdown-item nav-btn" data-target="profileScreen">👤 Personal Information</button>
     <button class="dropdown-item nav-btn" data-target="securityScreen">🔒 Security</button>
-    <button class="dropdown-item nav-btn" data-target="aboutScreen">ℹ️ About Synapse</button>
     <button class="dropdown-item nav-btn" data-target="guidelinesScreen">📜 Community Guidelines</button>
     <button class="dropdown-item nav-btn" data-target="contactScreen">✉️ Contact & Support</button>
     <div style="height:1px; background:var(--border); margin:4px 0;"></div>
@@ -253,48 +258,23 @@
 
   <!-- ── 1. AUTH SCREEN ── -->
   <div id="authScreen" class="screen active">
-    <div style="text-align:center; margin-bottom:12px;">
-      <h3 style="margin:0; font-size:18px; font-weight:700;">Welcome to Synapse</h3>
-      <p style="margin:4px 0 0; font-size:12px; color:var(--text-muted);">Please log in to sync your context.</p>
-    </div>
-    <div class="auth-card">
-      <div class="auth-tabs">
-        <button id="tabLogin" class="auth-tab active" style="flex:1;">Sign In</button>
-        <button id="tabRegister" class="auth-tab" style="flex:1;">Sign Up</button>
-      </div>
-      
-      <form id="authForm">
-        <div id="nameFieldContainer" class="input-group" style="display:none;">
-          <label class="input-label">Full Name</label>
-          <input type="text" id="authName" class="input-field" placeholder="John Doe">
-        </div>
-        <div class="input-group">
-          <label class="input-label">Email Address</label>
-          <input type="email" id="authEmail" class="input-field" placeholder="name@domain.com" required>
-        </div>
-        <div class="input-group">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <label class="input-label">Password</label>
-            <a href="#" id="forgotPasswordLink" style="font-size:10px; color:var(--primary); text-decoration:none; display:block; margin-bottom:4px;">Forgot?</a>
-          </div>
-          <input type="password" id="authPassword" class="input-field" placeholder="••••••••" required>
-        </div>
-        <button type="submit" id="btnAuthSubmit" class="btn" style="margin-top:8px;">Sign In</button>
-      </form>
-      
-      <div style="display: flex; align-items: center; margin: 16px 0; gap: 8px;">
-        <div style="flex: 1; height: 1px; background: var(--border);"></div>
-        <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight:600;">OR</span>
-        <div style="flex: 1; height: 1px; background: var(--border);"></div>
-      </div>
-      
-      <button id="btnGoogleLogin" class="btn btn-secondary">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-          <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C18.155 2.185 15.43 1 12.24 1 5.48 1 0 6.48 0 13.24s5.48 12.24 12.24 12.24c7.06 0 11.758-4.965 11.758-11.966 0-.807-.087-1.427-.193-2.23H12.24z"/>
+    <div style="text-align:center; margin: 40px 0 20px;">
+      <div style="color: var(--primary); margin-bottom: 16px; display: inline-flex; justify-content: center;">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="5" r="2.5" fill="currentColor"/>
+          <circle cx="5" cy="19" r="2.5" fill="currentColor"/>
+          <circle cx="19" cy="19" r="2.5" fill="currentColor"/>
+          <line x1="12" y1="7.5" x2="6.5" y2="16.5" />
+          <line x1="12" y1="7.5" x2="17.5" y2="16.5" />
+          <line x1="7.5" y1="19" x2="16.5" y2="19" />
         </svg>
-        Continue with Google
+      </div>
+      <h3 style="margin:0; font-size:18px; font-weight:700;">Authentication Required</h3>
+      <p style="margin:8px 0 24px; font-size:12px; color:var(--text-muted); padding: 0 16px; line-height:1.5;">To use Synapse AI Link, please sign in or create an account via our secure web portal.</p>
+      
+      <button id="btnLaunchAuth" class="btn" style="margin: 0 auto; max-width: 240px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+        🌐 Sign In on Website
       </button>
-      <div id="authError" class="error-msg"></div>
     </div>
   </div>
 
@@ -392,7 +372,7 @@
   <!-- ── 3. PROFILE SCREEN ── -->
   <div id="profileScreen" class="screen">
     <div class="screen-header">
-      <button class="back-btn nav-btn" data-target="mainAppScreen">← Back</button>
+      <button class="back-btn nav-btn" data-target="dashboardScreen">← Back</button>
       <h3 class="screen-title">Personal Info</h3>
     </div>
     <div id="profileImagePreview" class="user-avatar large"></div>
@@ -418,7 +398,7 @@
   <!-- ── 4. SECURITY SCREEN ── -->
   <div id="securityScreen" class="screen">
     <div class="screen-header">
-      <button class="back-btn nav-btn" data-target="mainAppScreen">← Back</button>
+      <button class="back-btn nav-btn" data-target="dashboardScreen">← Back</button>
       <h3 class="screen-title">Security</h3>
     </div>
     <div id="securityGoogleMsg" class="info-block" style="display:none; text-align:center; padding:24px 12px;">
@@ -456,7 +436,7 @@
   <!-- ── 5. GUIDELINES SCREEN ── -->
   <div id="guidelinesScreen" class="screen">
     <div class="screen-header">
-      <button class="back-btn nav-btn" data-target="mainAppScreen">← Back</button>
+      <button class="back-btn nav-btn" data-target="dashboardScreen">← Back</button>
       <h3 class="screen-title">Community Guidelines</h3>
     </div>
     <div class="info-block" style="flex:1; overflow-y:auto; font-size:12px; line-height:1.6; color:var(--text-muted);">
@@ -474,7 +454,7 @@
   <!-- ── 6. CONTACT SCREEN ── -->
   <div id="contactScreen" class="screen">
     <div class="screen-header">
-      <button class="back-btn nav-btn" data-target="mainAppScreen">← Back</button>
+      <button class="back-btn nav-btn" data-target="dashboardScreen">← Back</button>
       <h3 class="screen-title">Contact & Support</h3>
     </div>
     <div class="info-block" style="text-align:center; padding:24px 12px;">
@@ -513,6 +493,10 @@
         </button>
       </div>
     </div>
+  <!-- ── FOOTER ── -->
+  <div class="popup-footer" style="text-align: center; padding: 10px; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border); background: var(--bg); margin-top: auto; display: flex; flex-direction: column; gap: 4px; z-index: 10;">
+    <div>Created by <strong style="color:var(--text);">Hamza Taif (HTK)</strong></div>
+    <div><a href="https://www.linkedin.com/in/hamzataif" target="_blank" style="color:var(--primary); text-decoration:none; font-weight:600;">LinkedIn</a></div>
   </div>
 
   <script type="module" src="popup.js"></script>

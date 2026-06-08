@@ -19,6 +19,8 @@
     "https://*.identitytoolkit.googleapis.com/*",
     "https://*.firestore.googleapis.com/*",
     "https://*.firebaseio.com/*",
+    "https://*.googleapis.com/*",
+    "wss://*.firestore.googleapis.com/*",
     "https://api.groq.com/*"
   ],
   "content_scripts": [
@@ -47,5 +49,10 @@
       "resources": ["libs/pdf.min.js", "libs/pdf.worker.min.js", "libs/mammoth.min.js"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://synapse-ai.app/*"
+    ]
+  }
 }

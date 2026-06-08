@@ -18,7 +18,11 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
 
+console.log("Firebase App:", app);
+console.log("Firestore DB:", db);
+
 export { 
+  app,
   auth, 
   provider, 
   signInWithPopup, 

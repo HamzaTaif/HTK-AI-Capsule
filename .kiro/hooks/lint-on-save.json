@@ -1,0 +1,13 @@
+{
+  "name": "Lint JS on Save",
+  "version": "1.0.0",
+  "description": "Reminds Kiro to check for Chrome Extension compatibility issues when editing JS files — no CDN imports, no module syntax in content.js, correct chrome.* API usage.",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["*.js"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A JavaScript file was just saved in the Synapse AI Link Chrome Extension project. Quickly check:\n1. No Firebase or library imports from CDN URLs (must use local libs/ copies)\n2. content.js must NOT use ES module import/export syntax (it is a non-module content script)\n3. Any chrome.storage.local calls in content.js must go through safeStorageGet() / safeStorageSet() wrappers\n4. Any new chrome.runtime.onMessage async handlers must return true\n5. All user-supplied text rendered in HTML uses safeAttr()\nIf any issue is found, describe it clearly. Do NOT auto-fix — just report."
+  }
+}
